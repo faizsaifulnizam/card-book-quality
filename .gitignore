@@ -1,0 +1,27 @@
+# ---- data and models (raw is never committed) ----
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/README.md
+!**/.gitkeep
+models/*
+*.parquet
+*.xlsx
+*.pkl
+*.joblib
+
+# CSVs are ignored by default; published small outputs are exempted
+*.csv
+!outputs/**/*.csv
+
+# ---- python and notebooks ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# ---- env and editor ----
+.env
+.DS_Store
+Thumbs.db
