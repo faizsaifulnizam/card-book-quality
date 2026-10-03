@@ -13,6 +13,7 @@ models/*
 # CSVs are ignored by default; published small outputs are exempted
 *.csv
 !outputs/**/*.csv
+!outputs/**/*.xlsx
 
 # ---- python and notebooks ----
 .venv/

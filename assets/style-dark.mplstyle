@@ -1,0 +1,31 @@
+# Six-on-SG series matplotlib style — DARK twin (theme-adaptive pair of style.mplstyle; same metrics, dark surfaces)
+font.family: sans-serif
+font.sans-serif: Inter, DejaVu Sans, sans-serif
+font.size: 10
+text.color: "#E7E3DC"
+axes.titlesize: 13
+axes.titlelocation: left
+axes.titlepad: 14
+axes.labelsize: 10
+axes.labelcolor: "#A9B6C1"
+axes.edgecolor: "#2C4358"
+axes.linewidth: 0.8
+axes.spines.top: False
+axes.spines.right: False
+axes.grid: True
+axes.grid.axis: y
+grid.color: "#2C4358"
+grid.linewidth: 0.6
+axes.prop_cycle: cycler("color", ["#4C93B5", "#D97E4F", "#45A08B", "#A78FC8", "#D4B87A", "#8B98A5"])
+xtick.color: "#8B98A5"
+ytick.color: "#8B98A5"
+xtick.labelsize: 9
+ytick.labelsize: 9
+figure.facecolor: "#14293D"
+axes.facecolor: "#14293D"
+savefig.facecolor: "#14293D"
+savefig.dpi: 200
+figure.figsize: 8, 4.5
+legend.frameon: False
+legend.loc: best
+legend.fontsize: 9
