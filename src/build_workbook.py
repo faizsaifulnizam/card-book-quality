@@ -9,7 +9,10 @@ Formula-only, no macros. Run (repo root): python src/build_workbook.py
 Receipts printed: row counts + the values a reviewer sees for the default selection.
 """
 import csv
+import re
 import sys
+import zipfile
+from datetime import datetime
 from pathlib import Path
 
 import duckdb
@@ -39,6 +42,27 @@ def q(con, sql):
     return con.sql(sql).fetchall()
 
 
+def normalize_xlsx(path):
+    """Rewrite the saved workbook deterministically.
+
+    openpyxl writes zip entries with the current clock time and re-stamps
+    docProps/core.xml 'modified' at save (no config knob), so two builds of the
+    same data differ in bytes. Rebuild the archive with a fixed entry order and
+    timestamp: a reviewer re-running this script must see a byte-identical file.
+    """
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for name in sorted(zin.namelist()):
+            data = zin.read(name)
+            if name == "docProps/core.xml":
+                data = re.sub(rb"<dcterms:modified[^>]*>[^<]*</dcterms:modified>",
+                              b'<dcterms:modified xsi:type="dcterms:W3CDTF">2026-10-03T00:00:00Z</dcterms:modified>', data)
+            zi = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            zi.compress_type = zipfile.ZIP_DEFLATED
+            zout.writestr(zi, data)
+    tmp.replace(path)
+
+
 def main():
     if not Path(PARQUET).exists():
         sys.exit("data/processed/quarterly.parquet missing — run src/build_dataset.py first")
@@ -48,6 +72,12 @@ def main():
     quarters = [(label(r[0]), r[0].year, (r[0].month - 1) // 3 + 1, float(r[1]), float(r[2]), float(r[3]), float(r[4])) for r in rows]
 
     wb = Workbook()
+    # Deterministic output: fixed document timestamps (a rebuild must be byte-identical,
+    # not "same bytes except the save time" — reviewers diff regenerated artifacts).
+    wb.properties.created = datetime(2026, 10, 3, 0, 0, 0)
+    wb.properties.modified = datetime(2026, 10, 3, 0, 0, 0)
+    wb.properties.creator = "card-book-quality — src/build_workbook.py"
+    wb.properties.lastModifiedBy = "card-book-quality — src/build_workbook.py"
     ws = wb.active
     ws.title = "Quick check"
 
@@ -151,6 +181,7 @@ def main():
         wb2.column_dimensions[col].width = w
 
     wb.save(OUT)
+    normalize_xlsx(OUT)
     print(f"wrote: {OUT.as_posix()}  ({OUT.stat().st_size} bytes)")
     print(f"sheets: {wb.sheetnames} · quarterly rows: {len(quarters)} · bridge rows: {len(brows)}")
 
