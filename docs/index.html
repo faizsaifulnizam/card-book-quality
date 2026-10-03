@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>card-book-quality — Volume or rate? Singapore's card write-offs</title>
+<meta name="description" content="Did credit-card write-offs rise because the book grew — or because the charge-off rate worsened? A reproducible rate-vs-volume bridge on MAS card data (2025 vs 2024).">
+<meta property="og:title" content="card-book-quality — Volume or rate?">
+<meta property="og:description" content="Singapore card write-offs 2025: +96.5 S$M = volume +63.9 + rate +32.6 — mostly the book, not a 2020 repeat.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://faizsaifulnizam.github.io/card-book-quality/img/social-card.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--bg:#FBFBF9;--fg:#14293D;--muted:#5C6B79;--accent:#C0552B;--rule:#E7E3DC;--fig-bg:#FBFBF9}
+@media (prefers-color-scheme: dark){:root{--bg:#101E2B;--fg:#EAE6DF;--muted:#9AA9B6;--accent:#E5A77F;--rule:#2A3B4A;--fig-bg:#0C1824}}
+@font-face{font-family:'Inter';src:url('fonts/Inter-Regular.ttf');font-weight:400}
+@font-face{font-family:'Inter';src:url('fonts/Inter-SemiBold.ttf');font-weight:600}
+@font-face{font-family:'Source Serif 4';src:url('fonts/SourceSerif4-Regular.ttf');font-weight:400}
+@font-face{font-family:'Source Serif 4';src:url('fonts/SourceSerif4-Bold.ttf');font-weight:700}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,-apple-system,Segoe UI,Arial,sans-serif;line-height:1.6;font-size:16.5px}
+.wrap{max-width:880px;margin:0 auto;padding:36px 22px 56px}
+.series{color:var(--accent);font-size:14.5px;letter-spacing:.02em;margin:0 0 14px}
+.banner img{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:10px}
+.lead{font-family:'Source Serif 4',Georgia,serif;font-size:22px;line-height:1.5;margin:34px 0 8px}
+.lead b{font-weight:700}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:26px 0}
+.stat{border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.stat .n{font-family:'Source Serif 4',Georgia,serif;font-size:29px;line-height:1.15}
+.stat .l{color:var(--muted);font-size:14px;margin-top:6px}
+h2{font-family:'Source Serif 4',Georgia,serif;font-size:26px;font-weight:700;margin:52px 0 12px}
+p{margin:12px 0}
+a{color:var(--accent)}
+.fig{margin:26px 0}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:10px}
+.fig figcaption,.cap{color:var(--muted);font-size:14px;margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.grid2 .fig{margin:0}
+.grid2 img{border-radius:8px}
+.note{border:1px solid var(--rule);border-radius:10px;padding:14px 16px;font-size:14.5px;color:var(--muted)}
+ol.method{margin:14px 0;padding-left:22px}
+ol.method li{margin:10px 0}
+pre{background:transparent;border:1px solid var(--rule);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.55}
+code{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:.92em}
+footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:var(--muted);font-size:13.5px}
+@media (max-width:760px){.stats{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="series">A six-repo series on Singapore's public data · 2 of 6</p>
+
+<div class="banner">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="img/banner-dark.svg">
+<img src="img/banner.svg" alt="card-book-quality — a six-repo series on Singapore's public data">
+</picture>
+</div>
+
+<p class="lead">Write-offs rose <b>+96.5 S$M to S$519.7M</b> in 2025 — and the split says <b>mostly the book, partly the rate</b>: volume <b>+63.9</b> vs rate <b>+32.6 S$M</b> (midpoint weights; the interaction is 0 by construction). The rate drifted up (5.44% → 5.83%) but stays below its <b>2020 peak (7.08%)</b> — and 2020 was the opposite story: the book shrank and the rate alone drove the rise.</p>
+
+<div class="stats">
+  <div class="stat"><div class="n">+96.5 S$M</div><div class="l">write-offs 423.2 → 519.7, 2025 vs 2024 — all issuers in Singapore, not one bank</div></div>
+  <div class="stat"><div class="n">+63.9 / +32.6</div><div class="l">the split in S$M: volume (the book grew) / rate (lending quality changed) — midpoint weights, exact</div></div>
+  <div class="stat"><div class="n">5.44% → 5.83%</div><div class="l">recomputed annual charge-off rate (published 5.4 → 5.8) — still below 2020's 7.08%</div></div>
+  <div class="stat"><div class="n">±0.05 pt</div><div class="l">recomputed vs published annual rate, 11/11 years — the data-quality receipt</div></div>
+</div>
+
+<div class="fig">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="img/f1_timeline-dark.png">
+<img src="img/f1_timeline.png" alt="Billings, write-offs and the charge-off rate with the rollover balance, 2015–2026">
+</picture>
+<figcaption>Billings, write-offs (bars + 4-quarter sum) and the charge-off rate — with the rollover balance it is charged on (dashed). 2015 Q1 – 2026 Q2.</figcaption>
+</div>
+
+<h2>More views</h2>
+<div class="grid2">
+  <figure class="fig">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="img/f2_bridge-dark.png"><img src="img/f2_bridge.png" alt="Waterfall: the write-off change split into volume and rate, 2025 vs 2024 and 2020 vs 2019"></picture>
+  <figcaption>The bridge, latest year and the 2020 peak: volume-led vs rate-led</figcaption>
+  </figure>
+  <div class="note"><b>Excel quick-check.</b> Pick a quarter from a dropdown — the sheet pulls billings, rollover, write-offs, the published rate, a rolling 4-quarter sum and the rate-vs-last-year change. Formula-only, no macros.<br><br><a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/outputs/quick_check.xlsx">outputs/quick_check.xlsx</a> — also attached to the <a href="https://github.com/faizsaifulnizam/card-book-quality/releases">release</a>.</div>
+</div>
+
+<h2>Method</h2>
+<ol class="method">
+<li><b>Pull</b> — MAS credit &amp; charge cards from data.gov.sg; structure-validated before replacing files, SHA-256 + coverage in a manifest (2014 Q4 → 2026 Q2). <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/download.py">src/download.py</a></li>
+<li><b>Audit</b> — units and the rate definition checked against the published annual figures <i>before</i> analysis (reconciles ±0.05 pt). <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/data_audit.md">docs/data_audit.md</a></li>
+<li><b>Stage &amp; check</b> — the wide raw file unpivots to one tidy row per quarter; 8 assertions fail loudly before anything is written. <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/sql/01_staging.sql">sql/01</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/sql/05_checks.sql">sql/05</a></li>
+<li><b>Measure &amp; bridge</b> — complete years only; the change in write-offs splits into volume (Δrollover × avg rate) + rate (Δrate × avg rollover), midpoint weights — exact, no residual. <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/analysis.py">src/analysis.py</a> → <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/outputs/yearly_bridge.csv">outputs/yearly_bridge.csv</a></li>
+<li><b>Draw, write, check</b> — figures are code, light and dark (<a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/figures.py">src/figures.py</a>); then the <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/decision_memo.md">decision memo</a> and the <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/build_workbook.py">Excel quick-check</a>.</li>
+</ol>
+
+<h2>Reproduce</h2>
+<pre><code>git clone https://github.com/faizsaifulnizam/card-book-quality &amp;&amp; cd card-book-quality
+uv venv .venv --python 3.12          # or: python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt   # or: pip install -r requirements.txt
+
+python src/download.py       # both raw CSVs → data/raw/ (gitignored)
+python src/build_dataset.py  # staging + 8 checks → data/processed/quarterly.parquet
+python src/analysis.py       # annual bridge + sensitivity → outputs/
+python src/figures.py        # re-renders reports/figures/ (light + dark)
+python src/build_workbook.py # rebuilds outputs/quick_check.xlsx</code></pre>
+<p class="cap">Then check <code>outputs/yearly_bridge.csv</code>: the 2025 row reads Δ +96.5 = volume +63.9 + rate +32.6, and the workbook's default selection (2026 Q2) shows write-offs 138.1 with a 4-quarter sum of 543.4. Data as of the 2026-10-03 pull — a later re-pull can move the newest quarters.</p>
+
+<h2>Read more</h2>
+<ul>
+<li><a href="https://github.com/faizsaifulnizam/card-book-quality">The repository</a> — README carries the full method, rules, and caveats</li>
+<li><a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/decision_memo.md">Decision memo</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/sensitivity.md">Sensitivity checks</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/data_audit.md">Data audit</a></li>
+<li><a href="https://github.com/faizsaifulnizam/card-book-quality/releases">Release — the Excel quick-check workbook</a></li>
+</ul>
+
+<footer>
+<p>An independent, unofficial analysis by <a href="https://github.com/faizsaifulnizam">Muhammad Faiz Saifulnizam</a>. Data: MAS credit &amp; charge cards via <a href="https://data.gov.sg/datasets/d_5c8e5801c2a64e2e6b16608296ef3e02/view">data.gov.sg</a> — Singapore Open Data Licence. Code: MIT. Not a forecast; not causal advice.</p>
+</footer>
+
+</div>
+</body>
+</html>
