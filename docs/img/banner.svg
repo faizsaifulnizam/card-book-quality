@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="card-book-quality — did card write-offs rise because the book grew or because the charge-off rate worsened: a six-repo series on Singapore's public data">
+  <rect width="1280" height="320" fill="#FBFBF9"/>
+  <title>card-book-quality — a six-repo series on Singapore's public data</title>
+  <text x="72" y="118" font-family="Georgia, 'Source Serif 4', serif" font-size="58" fill="#14293D">card-book-quality</text>
+  <rect x="72" y="146" width="430" height="4" fill="#C0552B"/>
+  <text x="72" y="196" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">In 2025, credit-card write-offs rose S$96.5M — did</text>
+  <text x="72" y="222" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">the book grow, or did the charge-off rate worsen? A</text>
+  <text x="72" y="248" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">same-money split: <tspan fill="#22607B">●</tspan> volume +63.9 vs <tspan fill="#C0552B">●</tspan> rate +32.6,</text>
+  <text x="72" y="274" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">all issuers in Singapore, not one bank.</text>
+  <text x="72" y="306" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#8B98A5">Write-offs S$M · 2024 423.2 → 2025 519.7 · volume = the book grew · rate = lending quality</text>
+  <line x1="854" y1="91.1" x2="880" y2="91.1" stroke="#E7E3DC" stroke-width="3" stroke-dasharray="6 5"/>
+  <line x1="934" y1="66.5" x2="960" y2="66.5" stroke="#E7E3DC" stroke-width="3" stroke-dasharray="6 5"/>
+  <line x1="1014" y1="54" x2="1040" y2="54" stroke="#E7E3DC" stroke-width="3" stroke-dasharray="6 5"/>
+  <rect x="800" y="91.1" width="54" height="162.9" fill="#14293D"/>
+  <rect x="880" y="66.5" width="54" height="24.6" fill="#22607B"/>
+  <rect x="960" y="54" width="54" height="12.5" fill="#C0552B"/>
+  <rect x="1040" y="54" width="54" height="200" fill="#14293D"/>
+  <text x="827" y="83" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#5C6B79">423.2</text>
+  <text x="907" y="58" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#22607B">+63.9</text>
+  <text x="987" y="46" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#C0552B">+32.6</text>
+  <text x="1067" y="46" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#5C6B79">519.7</text>
+  <text x="827" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">2024</text>
+  <text x="907" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">volume</text>
+  <text x="987" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">rate</text>
+  <text x="1067" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">2025</text>
+  <text x="1208" y="306" text-anchor="end" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#C0552B">A six-repo series on Singapore's public data · 2 of 6</text>
+</svg>
