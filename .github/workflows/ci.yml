@@ -9,18 +9,33 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
-    name: smoke tests
+  pipeline:
+    name: pipeline + checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version-file: ".python-version"
+          cache: pip
 
-      - name: Compile sources
-        run: python -m compileall -q src
+      - name: Install pinned dependencies
+        run: pip install -r requirements.txt
 
-      - name: Check committed outputs, figures and workbook
+      - name: Run the full pipeline on the vendored raw files (no network)
+        run: |
+          python src/download.py        # files present → skip + verify sha256 vs the manifest
+          python src/build_dataset.py
+          python src/analysis.py
+          python src/figures.py
+          python src/build_workbook.py
+
+      - name: Unit test — the bridge on made-up numbers (no data needed)
+        run: python tests/test_bridge.py
+
+      - name: Committed artifacts & receipts (incl. locked headline numbers)
         run: python tests/smoke_test.py
+
+      - name: Regenerated CSVs match the committed ones (byte-for-byte)
+        run: git diff --exit-code -- 'outputs/*.csv'
