@@ -1,4 +1,4 @@
--- 05_checks.sql — validation queries for the staged `quarterly` table.
+-- 03_checks.sql — validation queries for the staged `quarterly` table.
 -- Each row: one check. src/build_dataset.py runs this and asserts all violations = 0.
 -- Checks must survive regeneration: nothing here pins an exact row count;
 -- the coverage floor is a lower bound, not an equality.

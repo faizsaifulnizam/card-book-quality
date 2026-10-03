@@ -10,10 +10,17 @@ Run: python src/download.py [--force]   (skips if the files already exist)
 Downloads land in .part files and are structurally validated BEFORE replacing any
 existing CSV (validate-before-write; a failed pull leaves existing files untouched):
 header shape, the six expected series present, per-row value counts, numeric values
-(annual may carry 'na'), quarter contiguity, and a freshness floor. On success writes
-data/raw/pull_manifest.json (sha256, rows, coverage, series, retrieval time).
+(annual may carry 'na'), quarter contiguity, and a freshness floor (the latest quarter
+within two quarters of today — a fixed floor goes stale silently). On success writes
+data/raw/pull_manifest.json: sha256 is over the RAW FILE BYTES (so it matches
+sha256sum), plus rows, coverage, series and the retrieval time.
+
+The two CSVs + the manifest are committed to the repo as vendored copies (small files;
+the Singapore Open Data Licence allows redistribution with attribution — given in the
+README and data/raw/README.md). CI runs the pipeline on them without any network.
 """
 import argparse
+import csv
 import hashlib
 import json
 import re
@@ -27,7 +34,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data/raw"
 MANIFEST = RAW / "pull_manifest.json"
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+UA = "card-book-quality (https://github.com/faizsaifulnizam/card-book-quality; data.gov.sg pull script)"
 
 SERIES = [
     "Principal Cardholders",
@@ -56,10 +63,17 @@ DATASETS = [
     },
 ]
 
-# Freshness floor for the quarterly file: the latest quarter must be at least this
-# recent, so a truncated or stale pull fails loudly instead of shipping quietly.
-Q_FLOOR = 2025 * 4 + 4  # 2025 Q4 (index = year*4 + quarter)
+# Freshness floor for the quarterly file: the latest quarter must be within two
+# quarters of today, so a truncated or stale pull fails loudly instead of shipping
+# quietly (a hard-coded floor silently goes stale as the series advances).
 Q_CONTIG_MIN = 40       # at least this many quarters overall
+
+
+def freshness_floor(today=None):
+    """Lowest acceptable latest-quarter index (year*4 + quarter), computed from today."""
+    today = today or datetime.now(timezone.utc)
+    current_q = today.year * 4 + (today.month - 1) // 3 + 1
+    return current_q - 2
 
 
 def get(url, ref="https://data.gov.sg/"):
@@ -74,16 +88,17 @@ def fetch_to_part(dataset_id, part):
     try:
         j = json.loads(get(base + "/poll-download"))
         url = (j.get("data") or {}).get("url") or ""
-    except Exception:
-        pass
+    except Exception as e:  # the pre-initiate poll is optional — say why it produced nothing
+        print(f"  poll-download before initiate failed: {e}", file=sys.stderr)
     if not url:
         get(base + "/initiate-download")
-        for _ in range(15):
+        for attempt in range(15):
             time.sleep(1.5)
             try:
                 j = json.loads(get(base + "/poll-download"))
                 url = (j.get("data") or {}).get("url") or ""
-            except Exception:
+            except Exception as e:
+                print(f"  poll-download retry {attempt + 1} failed: {e}", file=sys.stderr)
                 continue
             if url:
                 break
@@ -96,14 +111,17 @@ def fetch_to_part(dataset_id, part):
 
 
 def _shape(text):
-    lines = [l for l in text.splitlines() if l.strip()]
-    header = lines[0].split(",") if lines else []
-    body = [l.split(",") for l in lines[1:]]
-    return header, body
+    """Parse CSV text with the csv module — ONE parser for the whole script (a quoted
+    comma passes here but would break a naive split; download and analysis must agree)."""
+    rows = [r for r in csv.reader(text.splitlines()) if r and any(c.strip() for c in r)]
+    header = rows[0] if rows else []
+    return header, rows[1:]
 
 
-def validate_quarterly(text):
-    """Structural validation + summary for the quarterly wide CSV."""
+def validate_quarterly(data):
+    """Structural validation + summary for the quarterly wide CSV (raw bytes in;
+    the hash is over those bytes, so it matches `sha256sum` on the file)."""
+    text = data.decode("utf-8", errors="replace")
     header, body = _shape(text)
     problems = []
     if not header or header[0] != "DataSeries":
@@ -133,13 +151,15 @@ def validate_quarterly(text):
     if idx_sorted and any(b - a != 1 for a, b in zip(idx_sorted, idx_sorted[1:])):
         problems.append("quarter columns are not contiguous")
     latest = max(idx) if idx else 0
-    if latest < Q_FLOOR:
-        problems.append(f"latest quarter index {latest} is below the freshness floor {Q_FLOOR}")
+    floor = freshness_floor()
+    if latest < floor:
+        problems.append(f"latest quarter index {latest} is below the freshness floor {floor} "
+                        f"(latest quarter must be within two quarters of today)")
     if problems:
         return None, problems
     return {
-        "bytes": len(text.encode("utf-8")),
-        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
         "rows": len(body),
         "quarters": len(qcols),
         "quarter_min": _fmt_q(idx_sorted[0]),
@@ -153,7 +173,9 @@ def _fmt_q(index):
     return f"{(index - 1) // 4} Q{((index - 1) % 4) + 1}"
 
 
-def validate_annual(text):
+def validate_annual(data):
+    """Structural validation + summary for the annual wide CSV (raw bytes in; byte hash)."""
+    text = data.decode("utf-8", errors="replace")
     header, body = _shape(text)
     problems = []
     if not header or header[0] != "DataSeries":
@@ -174,8 +196,8 @@ def validate_annual(text):
     if problems:
         return None, problems
     return {
-        "bytes": len(text.encode("utf-8")),
-        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
         "rows": len(body),
         "years": len(ycols),
         "year_min": min(ycols),
@@ -220,8 +242,8 @@ def main():
             infos = {}
             ok = True
             for ds in DATASETS:
-                text = present[ds["key"]].read_text(encoding="utf-8", errors="replace")
-                info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(text)
+                data = present[ds["key"]].read_bytes()
+                info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(data)
                 if problems:
                     ok = False
                     print(f"  [FAIL] existing {ds['file']}: {problems}")
@@ -229,6 +251,15 @@ def main():
             if ok:
                 mtime = datetime.fromtimestamp(present["quarterly"].stat().st_mtime, tz=timezone.utc).isoformat(timespec="seconds")
                 write_manifest(infos, mtime)
+        else:
+            # byte-level receipt on the no-op path: files must still match the manifest
+            m = json.loads(MANIFEST.read_text(encoding="utf-8"))
+            for ds in DATASETS:
+                want = (m["files"].get(ds["file"]) or {}).get("sha256", "")
+                got = hashlib.sha256(present[ds["key"]].read_bytes()).hexdigest()
+                print(f"   [{'OK' if got == want else 'MISMATCH'}] {ds['file']} sha256 {got[:12]}…")
+                if got != want:
+                    print("          differs from the manifest — re-run with --force to re-pull and refresh it")
         return
 
     infos = {}
@@ -240,8 +271,8 @@ def main():
         if err:
             part.unlink(missing_ok=True)
             raise SystemExit(f"{ds['file']}: {err} — existing files left untouched")
-        text = part.read_text(encoding="utf-8", errors="replace")
-        info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(text)
+        data = part.read_bytes()
+        info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(data)
         if problems:
             part.unlink(missing_ok=True)
             raise SystemExit(f"{ds['file']} failed structure validation — kept existing file:\n  - " + "\n  - ".join(problems))
