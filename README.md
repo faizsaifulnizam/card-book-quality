@@ -154,4 +154,4 @@ Code: MIT. Data: Singapore Open Data Licence — © Monetary Authority of Singap
 
 ---
 
-*More Singapore public-data analysis: [hdb-resale-mart](https://github.com/faizsaifulnizam/hdb-resale-mart).*
+*More Singapore public-data analysis: [hdb-resale-mart](https://github.com/faizsaifulnizam/hdb-resale-mart) · [coe-quota-premium](https://github.com/faizsaifulnizam/coe-quota-premium) · [retail-sales-split](https://github.com/faizsaifulnizam/retail-sales-split).*
