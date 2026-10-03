@@ -18,6 +18,8 @@ import csv
 import re
 from pathlib import Path
 
+from download import validate_source_overlap
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data/raw"
 Q_FILE = RAW / "credit-charge-cards-quarterly.csv"
@@ -36,6 +38,8 @@ def load_wide(path):
 
 
 def main():
+    overlap = validate_source_overlap(Q_FILE.read_bytes(), A_FILE.read_bytes())
+    print(f"source overlap: complete quarterly years with annual cross-checks {overlap}")
     qcols_raw, qdata = load_wide(Q_FILE)
     ycols, ydata = load_wide(A_FILE)
 

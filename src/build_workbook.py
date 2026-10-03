@@ -17,15 +17,17 @@ no-OFFSET scan across every formula, and a check that the 4-quarter formula's in
 (the Seq window on the Quarterly sheet) sum to the value computed in Python.
 """
 import csv
-import re
+import xml.etree.ElementTree as ET
 import sys
 import zipfile
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
 import duckdb
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,8 +66,20 @@ def normalize_xlsx(path):
         for name in sorted(zin.namelist()):
             data = zin.read(name)
             if name == "docProps/core.xml":
-                data = re.sub(rb"<dcterms:modified[^>]*>[^<]*</dcterms:modified>",
-                              b'<dcterms:modified xsi:type="dcterms:W3CDTF">2026-10-04T00:00:00Z</dcterms:modified>', data)
+                # Trusted XML generated locally by openpyxl, not uploaded XML.
+                namespaces = {"cp": "http://schemas.openxmlformats.org/package/2006/metadata/core-properties",
+                              "dc": "http://purl.org/dc/elements/1.1/",
+                              "dcterms": "http://purl.org/dc/terms/",
+                              "xsi": "http://www.w3.org/2001/XMLSchema-instance"}
+                for prefix, uri in namespaces.items():
+                    ET.register_namespace(prefix, uri)
+                core = ET.fromstring(data)
+                for tag in ("created", "modified"):
+                    element = core.find(f'{{{namespaces["dcterms"]}}}{tag}')
+                    if element is not None:
+                        element.text = STAMP.isoformat() + "Z"
+                        element.set(f'{{{namespaces["xsi"]}}}type', "dcterms:W3CDTF")
+                data = ET.tostring(core, encoding="utf-8")
             zi = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             zi.compress_type = zipfile.ZIP_DEFLATED
             zout.writestr(zi, data)
@@ -73,6 +87,15 @@ def normalize_xlsx(path):
 
 
 def main():
+    # Same filesystem: validated replacement is atomic; failed builds are discarded.
+    with tempfile.TemporaryDirectory(prefix=".workbook-", dir=OUT.parent) as tmp:
+        candidate = Path(tmp) / OUT.name
+        build(candidate)
+        candidate.replace(OUT)
+    print(f"wrote: {OUT.as_posix()}  ({OUT.stat().st_size} bytes)")
+
+
+def build(out):
     if not Path(PARQUET).exists():
         sys.exit("data/processed/quarterly.parquet missing — run src/build_dataset.py first")
     con = duckdb.connect()
@@ -108,6 +131,8 @@ def main():
 
     dv = DataValidation(type="list", formula1=f"Quarterly!$A$2:$A${last}", allow_blank=False)
     dv.error = "Pick a quarter from the list"
+    dv.errorStyle = "stop"
+    dv.showErrorMessage = True
     ws.add_data_validation(dv)
     dv.add(ws["B4"])
 
@@ -125,6 +150,8 @@ def main():
     for i, (name, formula, numfmt) in enumerate(LBL):
         r = r0 + i
         ws.cell(row=r, column=1, value=name).font = HEAD if i == 0 else Font(color=INK)
+        if formula.startswith("=XLOOKUP("):
+            formula = formula.replace("XLOOKUP(", "_xlfn.XLOOKUP(", 1)[:-1] + ',"Invalid quarter")'
         c = ws.cell(row=r, column=2, value=formula)
         c.font = Font(bold=(i == 0), color=INK)
         if numfmt:
@@ -170,7 +197,7 @@ def main():
         wq.cell(row=i, column=9,
                 value=f'=IF($H{i}>=4,SUMIFS($F$2:$F${last},$H$2:$H${last},">="&$H{i}-3,$H$2:$H${last},"<="&$H{i}),"")')
         wq.cell(row=i, column=10,
-                value=f'=IF($H{i}>=5,SUMIFS($G$2:$G${last},$H$2:$H${last},$H{i}-4),"")')
+                value=f'=IF($H{i}>=5,$G{i}-SUMIFS($G$2:$G${last},$H$2:$H${last},$H{i}-4),"")')
     for col, w in zip("ABCDEFGHIJ", (10, 7, 5, 21, 22, 18, 18, 12, 26, 24)):
         wq.column_dimensions[col].width = w
 
@@ -178,6 +205,9 @@ def main():
     wb2 = wb.create_sheet("Annual bridge")
     with BRIDGE_CSV.open(newline="", encoding="utf-8") as f:
         brows = list(csv.DictReader(f))
+    baseline = int(brows[0]["previous_year"])
+    assert sum(qq[1] == baseline for qq in quarters) == 4, "Incomplete annual baseline"
+    brows.insert(0, {"year": baseline, "rate_pct_pub_annual": None})
     bhead = ["Year", "Write-offs (S$M)", "Avg rollover (S$M)", "Rate, recomputed (%)",
              "Rate, published (%)", "Δ write-offs (S$M)", "Volume effect (S$M)",
              "Rate effect (S$M)", "Closure (Δ−vol−rate, 0 = exact)"]
@@ -190,7 +220,8 @@ def main():
         wb2.cell(row=i, column=2, value=f'=SUMIFS(Quarterly!$F$2:$F${last},Quarterly!$B$2:$B${last},$A{i})')
         wb2.cell(row=i, column=3, value=f'=AVERAGEIFS(Quarterly!$E$2:$E${last},Quarterly!$B$2:$B${last},$A{i})')
         wb2.cell(row=i, column=4, value=f"=B{i}/C{i}*100")
-        wb2.cell(row=i, column=5, value=float(row["rate_pct_pub_annual"]))
+        if row["rate_pct_pub_annual"] not in (None, ""):
+            wb2.cell(row=i, column=5, value=float(row["rate_pct_pub_annual"]))
         if i > 2:
             wb2.cell(row=i, column=6, value=f"=B{i}-B{i - 1}")
             wb2.cell(row=i, column=7, value=f"=(C{i}-C{i - 1})*(D{i - 1}+D{i})/200")
@@ -207,9 +238,38 @@ def main():
     wb2.cell(row=note_row + 1, column=1,
              value="Column E (published rate) is pasted from the MAS annual file; volume = Δrollover × avg rate · rate = Δrate × avg rollover.").font = NOTE
 
-    wb.save(OUT)
-    normalize_xlsx(OUT)
-    print(f"wrote: {OUT.as_posix()}  ({OUT.stat().st_size} bytes)")
+    # Report layout: notes stay within the page; data tables keep their headers.
+    for row in (1, 2, 13, *range(nr, nr + len(notes))):
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
+        ws.cell(row, 1).alignment = Alignment(wrap_text=True, vertical="top")
+        ws.row_dimensions[row].height = 42 if row in (2, 13) else 30
+    for row in range(6, 13):
+        ws.cell(row, 1).alignment = Alignment(wrap_text=True, vertical="center")
+        ws.row_dimensions[row].height = 30
+    for sheet, ref, name in ((wq, f"A1:J{last}", "QuarterlyData"),
+                              (wb2, f"A1:I{len(brows) + 1}", "AnnualBridgeData")):
+        sheet.freeze_panes = "A2"
+        sheet.auto_filter.ref = ref
+        table = Table(displayName=name, ref=ref)
+        table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
+        sheet.add_table(table)
+        sheet.print_title_rows = "1:1"
+        sheet.row_dimensions[1].height = 42
+        for cell in sheet[1]:
+            cell.alignment = Alignment(wrap_text=True, vertical="center")
+    for row in (note_row, note_row + 1):
+        wb2.merge_cells(start_row=row, start_column=1, end_row=row, end_column=9)
+        wb2.cell(row, 1).alignment = Alignment(wrap_text=True, vertical="top")
+        wb2.row_dimensions[row].height = 30
+    for sheet in wb:
+        sheet.print_area = sheet.dimensions
+        sheet.page_setup.orientation = "portrait" if sheet == ws else "landscape"
+        sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
+        sheet.page_setup.fitToWidth = 1
+        sheet.page_setup.fitToHeight = 0
+        sheet.sheet_properties.pageSetUpPr.fitToPage = True
+    wb.save(out)
+    normalize_xlsx(out)
     print(f"sheets: {wb.sheetnames} · quarterly rows: {len(quarters)} · bridge rows: {len(brows)}")
 
     # ------------------------------------------------------------------
@@ -218,7 +278,7 @@ def main():
     # formula's construction, and the numbers the formulas will compute are
     # reproduced in Python from the same rows they range over.
     # ------------------------------------------------------------------
-    rb = load_workbook(OUT)
+    rb = load_workbook(out)
 
     offenders = [f"{sh.title}!{c.coordinate}"
                  for sh in rb.worksheets for row in sh.iter_rows() for c in row
@@ -250,6 +310,15 @@ def main():
     assert col_a[0] == "Quarter" and len(col_a) == len(quarters) + 1
     seq_col = [rb["Quarterly"][f"H{r}"].value for r in range(2, last + 1)]
     assert seq_col[0] == n and seq_col[-1] == 1 and sorted(seq_col) == list(range(1, n + 1)), "Seq column broken"
+    # Check the saved formulas, not merely a separately printed Python result.
+    for r in range(2, last + 1):
+        expected = f'=IF($H{r}>=5,$G{r}-SUMIFS($G$2:$G${last},$H$2:$H${last},$H{r}-4),"")'
+        assert rb["Quarterly"].cell(r, 10).value == expected, f"Rate-change formula broken at J{r}"
+    saved = {rb["Quarterly"].cell(r, 8).value: rb["Quarterly"].cell(r, 7).value
+             for r in range(2, last + 1)}
+    saved_yoy = round(saved[seq_latest] - saved[seq_latest - 4], 1)
+    assert saved_yoy == yoy, "Saved rate-change inputs disagree with source"
+    print(f"  rate-change formula/input check: {saved[seq_latest]:.1f} - {saved[seq_latest - 4]:.1f} = {saved_yoy:+.1f} pt (not engine evaluation)")
     print(f"  quarterly sheet: {n} rows · Seq 1..{n} (newest first) · per-row windows in cols I/J")
     print("RESULT: workbook written + read-back checks PASS")
 

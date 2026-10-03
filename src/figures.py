@@ -43,7 +43,7 @@ from matplotlib.patches import Patch  # noqa: E402
 from matplotlib.textpath import TextPath  # noqa: E402
 
 from src.analysis import bridge as split_bridge  # noqa: E402
-from src.analysis import run_script, window_stats, year_quarters  # noqa: E402
+from src.analysis import book_split, run_script, window_stats, year_quarters  # noqa: E402
 
 PARQUET = (ROOT / "data/processed/quarterly.parquet").as_posix()
 FIGDIR = ROOT / "reports/figures"
@@ -247,7 +247,7 @@ def fig1_timeline(con, canvas_in=9.0):
     axs[3].xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     fig.subplots_adjust(left=0.105, right=0.90, top=0.935, bottom=0.075, hspace=0.34)
     ftxt = foot(fig, foottext)
-    assert_clear(fig, [(st, axs[0].title), (ftxt, axs[3].get_xticklabels()[-1])], "F1 suptitle/title + footnote/ticks")
+    assert_clear(fig, [(st, axs[0]._left_title), (ftxt, axs[3].get_xticklabels()[-1])], "F1 suptitle/title + footnote/ticks")
     assert_inbounds(fig, "F1")
     assert_texts_clear(fig, "F1")
     print(f"F1: {len(xs)} quarters plotted · rate {rate[0]:.1f} → {rate[-1]:.1f}% · "
@@ -260,7 +260,9 @@ def _panel_years(con):
     years = annual_years(con)
     pub = published_annual_rates()
     latest = years[-1]
-    peak = max(years, key=lambda y: pub.get(y, 0)) if pub else years[-1]
+    overlap = [y for y in years if y in pub]
+    proxy = dict(q(con, "SELECT year, rate_pct_recomputed FROM annual"))
+    peak = max(overlap, key=pub.get) if overlap else max(years, key=proxy.get)
     pairs, seen = [], set()
     for y in (latest, latest - 1, peak):
         if y - 1 in years and (y, y - 1) not in seen:
@@ -279,9 +281,12 @@ def fig2_bridge(con, canvas_in=9.0):
         shape = "rate-led" if abs(b["rate"]) > abs(b["volume"]) else "volume-led"
         panels.append((y_new, y_old, old, new, b, shape))
 
-    title = "Where the change came from — write-offs split into book growth (volume) and the charge-off rate"
-    foottext = ("S$M · Δ write-offs = Δrollover × avg rate (volume) + Δrate × avg rollover (rate) — midpoint weights; negative contributions shaded grey\n"
-                f"2020 = the series' peak rate year (7.1% published) · {SRC}")
+    peak_rate = published_annual_rates().get(peak)
+    peak_basis = f"{peak_rate:.1f}% published annual" if peak_rate is not None else "recomputed proxy ratio"
+    title = "Where the change came from — write-offs split into rollover balance and the proxy loss ratio"
+    foottext = ("S$M · midpoint split: Δrollover × average proxy ratio + Δratio × average rollover\n"
+                "Positive volume = blue; positive ratio = orange; negative volume = grey; negative ratio = violet\n"
+                f"{peak} = peak among available annual-rate years ({peak_basis}) · {SRC}")
     assert_fits(title, 12.5, "F2 title", canvas_in)
     assert_fits(foottext, 7.5, "F2 footnote", canvas_in)
 
@@ -320,12 +325,12 @@ def fig2_bridge(con, canvas_in=9.0):
         ax.set_ylim(0, ymax * 1.22)
         ax.xaxis.grid(False)
         extra = " · series peak" if y_new == peak else ""
-        ax.set_title(f"{y_new} vs {y_old} — {shape}{extra}\n+{b['dW']:.1f} S$M = volume {b['volume']:+.1f} + rate {b['rate']:+.1f}",
+        ax.set_title(f"{y_new} vs {y_old} — {shape}{extra}\n{b['dW']:+.1f} S$M = volume {b['volume']:+.1f} + rate {b['rate']:+.1f}",
                      fontsize=10, color=T["muted"])
     axs[0].set_ylabel("write-offs, S$M per year", fontsize=9)
-    fig.subplots_adjust(left=0.085, right=0.985, top=0.78, bottom=0.12, wspace=0.12)
+    fig.subplots_adjust(left=0.085, right=0.985, top=0.78, bottom=0.18, wspace=0.12)
     ftxt = foot(fig, foottext)
-    assert_clear(fig, [(st, axs[0].title), (ftxt, axs[0].get_xticklabels()[-1])], "F2 suptitle/title + footnote/ticks")
+    assert_clear(fig, [(st, axs[0]._left_title), (ftxt, axs[0].get_xticklabels()[-1])], "F2 suptitle/title + footnote/ticks")
     assert_inbounds(fig, "F2")
     assert_texts_clear(fig, "F2")
     for y_new, y_old, _old, _new, b, shape in panels:
@@ -342,9 +347,9 @@ def fig3_contributions(con, canvas_in=9.0):
         new = window_stats(con, year_quarters(y))
         data.append((y, split_bridge(old, new)))
 
-    title = "Where each year's change came from — write-offs split into book growth and the rate, 2016–2025"
-    foottext = ("Midpoint weights: volume = Δrollover × avg rate · rate = Δrate × avg rollover · bars = contributions, labels = net change (S$M)\n"
-                f"Negative bars are coloured differently from positive ones · {SRC}")
+    title = f"Annual write-off changes split into rollover balance and the proxy loss ratio, {data[0][0]}–{data[-1][0]}"
+    foottext = ("Midpoint split: volume = Δrollover × average proxy ratio · ratio = Δratio × average rollover · labels = net change (S$M)\n"
+                f"Negative contributions reduce write-offs (grey: volume; violet: ratio) · {SRC}")
     assert_fits(title, 12.5, "F3 title", canvas_in)
     assert_fits(foottext, 7.5, "F3 footnote", canvas_in)
 
@@ -371,8 +376,10 @@ def fig3_contributions(con, canvas_in=9.0):
     ax.set_xticklabels([str(y) for y, _ in data], fontsize=9)
     ax.set_ylim(lo * 1.28, hi * 1.22)
     ax.set_ylabel("contribution to Δ write-offs, S$M", fontsize=9)
-    ax.legend(handles=[Patch(color=T["petrol"], label="volume (book growth)"),
-                       Patch(color=T["burnt"], label="rate (charge-off rate)")],
+    ax.legend(handles=[Patch(color=T["petrol"], label="volume (positive)"),
+                       Patch(color=T["burnt"], label="ratio (positive)"),
+                       Patch(color=T["muted"], label="volume (negative)"),
+                       Patch(color=T["violet"], label="ratio (negative)")],
               loc="best", fontsize=8.5)
     fig.subplots_adjust(left=0.095, right=0.985, top=0.80, bottom=0.14)
     ftxt = foot(fig, foottext)
@@ -396,9 +403,14 @@ def fig4_book(con, canvas_in=9.0):
     ys = [int(r[0]) for r in yr]
     wpc = [float(r[1]) for r in yr]
 
-    title = "The book, per card — cardholders, the revolving balance, and write-offs per principal card"
-    foottext = ("Cards & balances: average of the four quarter-ends · write-offs per principal card: Σ write-offs ÷ average principal cards ·\n"
-                f"2025 Q3 principal-card break (−4.0% in a quarter) flagged, not explained — docs/data_audit.md · {SRC}")
+    title = "Card counts, revolving balances, and annual write-offs per principal card"
+    supp_avg = q(con, "SELECT year(quarter), avg(supplementary_cardholders) FROM quarterly GROUP BY 1 HAVING count(*) = 4 ORDER BY 1")
+    supp_change = (supp_avg[-1][1] / supp_avg[0][1] - 1) * 100
+    ib = xs.index(date(2025, 7, 1))
+    break_pct = (prin[ib] / prin[ib - 1] - 1) * 100
+    foottext = ("Cards and rollover lines: quarter-end observations · annual bars: annual write-offs ÷ average quarter-end principal count\n"
+                f"2025 Q2 → Q3 principal-count break ({break_pct:+.1f}%) flagged, not explained · counts are not unique customers\n"
+                f"{SRC}")
     assert_fits(title, 12.5, "F4 title", canvas_in)
     assert_fits(foottext, 7.5, "F4 footnote", canvas_in)
 
@@ -410,22 +422,25 @@ def fig4_book(con, canvas_in=9.0):
     ax0.plot(xs, supp, color=T["teal"], lw=2.0, ls="--", label="supplementary")
     ax0.set_ylim(0, 7.4)
     ax0.set_ylabel("millions of cards", fontsize=9)
-    ax0.set_title("Cardholders — principal (solid) · supplementary (dashed, −32% since 2015)",
+    ax0.set_title(f"Card counts — supplementary {supp_change:+.0f}% ({supp_avg[0][0]}–{supp_avg[-1][0]} annual averages)",
                   fontsize=10, color=T["muted"])
     ax0.legend(loc="best", fontsize=8.5)
-    ib = xs.index(date(2025, 7, 1))
-    ax0.annotate(f"2025 Q3: {prin[ib]:.2f}M → {prin[ib + 1]:.2f}M (−4.0%) — flagged",
-                 (xs[ib + 1], prin[ib + 1]), xytext=(-10, 16), textcoords="offset points", ha="right",
+    ax0.annotate(f"2025 Q2 → Q3: {prin[ib - 1]:.2f}M → {prin[ib]:.2f}M ({break_pct:+.1f}%) — flagged",
+                 (xs[ib], prin[ib]), xytext=(-10, 16), textcoords="offset points", ha="right",
                  fontsize=8, color=T["ink"])
 
     ax1 = axs[1]
     ax1.plot(xs, roll, color=T["petrol"], lw=2.0)
     ax1.set_ylim(0, 11200)
     ax1.set_ylabel("S$M, quarter-end", fontsize=9)
-    ax1.set_title("Rollover balance — the interest-bearing balance the rate is charged on",
+    ax1.set_title("Rollover balance — revolving balance used as the charge-off-ratio denominator",
                   fontsize=10, color=T["muted"])
-    ax1.text(0.012, 0.94, "2025: Δrollover +1,135 = cards −32 + balance/card +1,167 S$M · per card S$1,089 → 1,252",
-             transform=ax1.transAxes, fontsize=8, color=T["muted"], va="top")
+    split = book_split(con)[-1]
+    ax1.text(0.012, 0.94,
+             f"{split['year']} annual-average Δrollover {split['delta_rollover_sgd_m']:+,.0f} S$M: total-card count {split['cards_effect_sgd_m']:+,.0f} + per-card {split['balance_per_card_effect_sgd_m']:+,.0f}\n"
+             f"principal-only: count {split['principal_cards_effect_sgd_m']:+,.0f} + per-principal {split['balance_per_principal_card_effect_sgd_m']:+,.0f} S$M (denominator-sensitive)",
+             transform=ax1.transAxes, fontsize=8, color=T["muted"], va="top",
+             bbox=dict(facecolor=ax1.get_facecolor(), edgecolor="none", pad=2))
     ax1.annotate(f"{roll[-1]:,.0f}", (xs[-1], roll[-1]), xytext=(6, -2), textcoords="offset points",
                  fontsize=8, color=T["ink"], va="top")
 
@@ -433,7 +448,8 @@ def fig4_book(con, canvas_in=9.0):
     ax2.bar([date(y, 7, 1) for y in ys], wpc, width=300, color=T["burnt"])
     ax2.set_ylim(0, max(wpc) * 1.22)
     ax2.set_ylabel("S$ per principal card", fontsize=9)
-    ax2.set_title("Write-offs per principal card each year — 68 → 84 (+22%) across 2024 → 2025",
+    wpc_change = (wpc[-1] / wpc[-2] - 1) * 100
+    ax2.set_title(f"Annual write-offs per principal card — {wpc[-2]:.1f} → {wpc[-1]:.1f} ({wpc_change:+.1f}%), {ys[-2]} → {ys[-1]}",
                   fontsize=10, color=T["muted"])
     ax2.annotate(f"{wpc[-1]:,.0f}", (date(ys[-1], 7, 1), wpc[-1]), xytext=(0, 6), textcoords="offset points",
                  ha="center", fontsize=8, color=T["ink"])
@@ -441,9 +457,9 @@ def fig4_book(con, canvas_in=9.0):
     axs[2].set_xlim(xs[0], mdates.date2num(xs[-1]) + 250)
     axs[2].set_xticks([date(y, 1, 1) for y in range(2016, 2027, 2)])
     axs[2].xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    fig.subplots_adjust(left=0.095, right=0.90, top=0.935, bottom=0.09, hspace=0.38)
+    fig.subplots_adjust(left=0.095, right=0.90, top=0.90, bottom=0.12, hspace=0.42)
     ftxt = foot(fig, foottext)
-    assert_clear(fig, [(st, axs[0].title), (ftxt, axs[2].get_xticklabels()[-1])], "F4 suptitle/title + footnote/ticks")
+    assert_clear(fig, [(st, axs[0]._left_title), (ftxt, axs[2].get_xticklabels()[-1])], "F4 suptitle/title + footnote/ticks")
     assert_inbounds(fig, "F4")
     assert_texts_clear(fig, "F4")
     print(f"F4: cards {prin[-1]:.2f}M principal / {supp[-1]:.2f}M supplementary · rollover {roll[0]:,.0f} → {roll[-1]:,.0f} S$M "

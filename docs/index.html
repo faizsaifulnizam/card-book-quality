@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>card-book-quality — Volume or rate? Singapore's card write-offs</title>
-<meta name="description" content="Did credit-card write-offs rise because the book grew — or because the charge-off rate worsened? A reproducible rate-vs-volume bridge on MAS card data (2025 vs 2024).">
+<meta name="description" content="Singapore card write-offs rose S$96.5 million in 2025: an arithmetic split into higher balances and a higher loss ratio. Fixed 2026-10-03 data snapshot, with limits and reproducible code.">
 <meta property="og:title" content="card-book-quality — Volume or rate?">
-<meta property="og:description" content="Singapore card write-offs 2025: +96.5 S$M = volume +63.9 + rate +32.6 — the rate reset in 2024; 2025 is balance-driven, not customer-driven.">
+<meta property="og:description" content="Singapore card write-offs 2025: +96.5 S$M = balance +63.9 + proxy ratio +32.6. Reported cards are not unique customers; fixed historical snapshot.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://faizsaifulnizam.github.io/card-book-quality/img/social-card.png">
 <meta property="og:image:width" content="1280">
@@ -33,10 +33,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,-apple-syst
 h2{font-family:'Source Serif 4',Georgia,serif;font-size:26px;font-weight:700;margin:52px 0 12px}
 p{margin:12px 0}
 a{color:var(--accent)}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.skip{position:absolute;left:-9999px}.skip:focus{position:static}
+h1{font-family:'Source Serif 4',Georgia,serif;font-size:32px;line-height:1.25}
 .fig{margin:26px 0}
 .fig img{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:10px}
 .fig figcaption,.cap{color:var(--muted);font-size:14px;margin-top:8px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.grid2{display:grid;grid-template-columns:1fr;gap:26px;align-items:start}
 .grid2 .fig{margin:0}
 .grid2 img{border-radius:8px}
 .note{border:1px solid var(--rule);border-radius:10px;padding:14px 16px;font-size:14.5px;color:var(--muted)}
@@ -49,7 +52,8 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:v
 </style>
 </head>
 <body>
-<div class="wrap">
+<a class="skip" href="#analysis">Skip to analysis</a>
+<main class="wrap" id="analysis">
 
 <p class="series">MAS credit &amp; charge cards via data.gov.sg · all issuers in Singapore, not one bank</p>
 
@@ -60,59 +64,64 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:v
 </picture>
 </div>
 
-<p class="lead">Write-offs are at a series high (<b>519.7 S$M</b> in 2025, <b>+96.5</b> vs 2024) for two reasons, in sequence: the <b>rate reset in 2024</b> (+1.42 pt, then six quarters near 5.9–6.0%), and then the <b>revolving balance kept growing</b> in 2025 (+14.6%). The delta splits <b>volume +63.9 / rate +32.6 S$M</b> — and it is not more customers: total cards <b>−0.4%</b>, balances per card <b>+15%</b>.</p>
+<h1>Higher card write-offs: more balance, or a higher loss ratio?</h1>
+<p class="lead">2025 write-offs rose <b>S$96.5 million</b>. An arithmetic split assigns <b>S$63.9 million to higher revolving balances</b> and <b>S$32.6 million to a higher recomputed loss ratio</b>. The larger ratio increase happened in 2024; the published quarterly rate then stayed at 5.9–6.0% from 2025 Q1 through 2026 Q2.</p>
+<p><b>Balance growth is not automatically healthy expansion or confirmed stress:</b> spending and slower repayment can both raise balances. Average reported total cards fell 0.4% while aggregate rollover balance per reported card rose 15%; <b>unique customers cannot be measured</b>, and the per-card proxy includes non-revolving cards. A ratio change does not isolate credit quality.</p>
+<p class="note"><b>Fixed historical snapshot:</b> pulled 2026-10-03, quarterly coverage 2014 Q4–2026 Q2. Text is maintained manually, not automatically refreshed. <a href="https://github.com/faizsaifulnizam/card-book-quality">Repository, code and full method</a>.</p>
 
 <div class="stats">
   <div class="stat"><div class="n">+96.5 S$M</div><div class="l">write-offs 423.2 → 519.7, 2025 vs 2024 — all issuers in Singapore, not one bank</div></div>
-  <div class="stat"><div class="n">+63.9 / +32.6</div><div class="l">the split in S$M: volume (the book grew) / rate (lending quality changed) — midpoint weights, exact</div></div>
-  <div class="stat"><div class="n">cards −32 · per-card +1,167</div><div class="l">the 2025 Δrollover (+1,135 S$M) split: not more customers — more balance per card (S$1,089 → 1,252)</div></div>
+  <div class="stat"><div class="n">+63.9 / +32.6</div><div class="l">the split in S$M: balance (higher aggregate balance per reported card) / recomputed ratio — midpoint arithmetic, not causal attribution</div></div>
+  <div class="stat"><div class="n">cards −32 or +30</div><div class="l">annual-average balance split: total cards −32 / per-card +1,167 S$M; principal-only +30 / per-card +1,105. Denominator-sensitive proxies, not customer counts</div></div>
   <div class="stat"><div class="n">5.44% → 5.83%</div><div class="l">recomputed annual rate (published 5.4 → 5.8) — an average that lags: the step-up landed in 2024; still below 2020's 7.08%</div></div>
   <div class="stat"><div class="n">±0.05 pt</div><div class="l">recomputed vs published annual rate, 11/11 years — the data-quality receipt; flows &amp; stocks both reconcile</div></div>
   <div class="stat"><div class="n">−4.0%</div><div class="l">principal cardholders, 2025 Q3 in one quarter (the largest move in the file) — flagged, not explained</div></div>
 </div>
 
-<div class="fig">
-<picture>
+<figure class="fig">
+<a href="img/f1_timeline.png" aria-label="View full-size timeline chart"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="img/f1_timeline-dark.png">
 <img src="img/f1_timeline.png" alt="Billings, write-offs, trailing 4-quarter write-offs and the charge-off rate, 2015–2026">
-</picture>
-<figcaption>Billings · write-offs (quarterly) · write-offs (trailing 4 quarters — full windows only) · the charge-off rate. 2015 Q1 – 2026 Q2.</figcaption>
-</div>
+</picture></a>
+<figcaption>Billings and write-offs are quarterly flows; trailing-four-quarter write-offs use full windows. Published charge-off rate is a loss ratio, not an interest rate. 2015 Q1–2026 Q2. <a href="img/f1_timeline.png">View full-size chart</a> · <a href="img/f1_timeline-dark.png">dark version</a>.</figcaption>
+</figure>
 
 <h2>More views</h2>
 <div class="grid2">
   <figure class="fig">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="img/f2_bridge-dark.png"><img src="img/f2_bridge.png" alt="Waterfall: 2025 vs 2024, 2024 vs 2023 and 2020 vs 2019, split into volume and rate"></picture>
-  <figcaption>The bridge — latest year (volume-led), the 2024 rate step-up and the 2020 peak</figcaption>
+  <a href="img/f2_bridge.png" aria-label="View full-size bridge chart"><picture><source media="(prefers-color-scheme: dark)" srcset="img/f2_bridge-dark.png"><img src="img/f2_bridge.png" alt="Waterfall: 2025 vs 2024, 2024 vs 2023 and 2020 vs 2019, split into balance and proxy-ratio terms"></picture></a>
+  <figcaption>2024 vs 2023: +152.8 = balance +50.0 + ratio +102.8 S$M. Across 2022–2025 the ratio term is the larger cumulative contribution; the smaller 2025 proxy-ratio change is a separate comparison. <a href="img/f2_bridge.png">View full-size chart</a> · <a href="img/f2_bridge-dark.png">dark version</a>.</figcaption>
   </figure>
   <figure class="fig">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="img/f3_contributions-dark.png"><img src="img/f3_contributions.png" alt="Stacked bars: each year's change split into volume and rate, 2016–2025"></picture>
-  <figcaption>Every year's change, volume vs rate, 2016–2025</figcaption>
+  <a href="img/f3_contributions.png" aria-label="View full-size annual-contributions chart"><picture><source media="(prefers-color-scheme: dark)" srcset="img/f3_contributions-dark.png"><img src="img/f3_contributions.png" alt="Positive and negative balance and ratio contributions to yearly write-off changes, 2016–2025"></picture></a>
+  <figcaption>Every year's change, balance versus proxy ratio, 2016–2025. <a href="img/f3_contributions.png">View full-size chart</a> · <a href="img/f3_contributions-dark.png">dark version</a>.</figcaption>
   </figure>
   <figure class="fig">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="img/f4_book-dark.png"><img src="img/f4_book.png" alt="Cardholders, the rollover balance, and write-offs per principal card"></picture>
-  <figcaption>The book per card — cards, revolving balance, write-offs per principal card (68 → 84)</figcaption>
+  <a href="img/f4_book.png" aria-label="View full-size card-count analysis"><picture><source media="(prefers-color-scheme: dark)" srcset="img/f4_book-dark.png"><img src="img/f4_book.png" alt="Quarter-end reported counts and revolving balances, plus annual write-offs per principal-card proxy; Q3 2025 break flagged"></picture></a>
+  <figcaption>Lines are quarter-end observations; annual per-card metrics use average quarter-end counts. Principal counts fell 6,349,360 → 6,095,333 (−4.0%) from 2025 Q2 to Q3. The break remains unexplained; principal-only counts do not solve it. <a href="img/f4_book.png">View full-size chart</a> · <a href="img/f4_book-dark.png">dark version</a>.</figcaption>
   </figure>
-  <div class="note"><b>Excel quick-check.</b> Pick a quarter from a dropdown — the sheet pulls the quarter's figures, a 4-quarter rolling sum and the rate change (SUMIFS keyed to a quarter index — no OFFSET). The Annual bridge sheet computes the split as live formulas. Formula-only, no macros.<br><br><a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/outputs/quick_check.xlsx">outputs/quick_check.xlsx</a> — also attached to the <a href="https://github.com/faizsaifulnizam/card-book-quality/releases">release</a>.</div>
+  <div class="note"><b>Excel quick-check.</b> Quarter selector, full trailing-four-quarter sum and annual bridge formulas. Requires XLOOKUP support (Microsoft 365 / Excel 2021 or later); formula-only, no macros. Non-recalculating previews may be blank. Python input checks are not spreadsheet-engine evaluation.<br><br><a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/outputs/quick_check.xlsx">outputs/quick_check.xlsx</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/releases">frozen release downloads</a> (may differ from the working tree).</div>
 </div>
 
 <h2>Method</h2>
+<p><b>What I did — Hermes-assisted:</b> Hermes implemented the pipeline and presentation; Faiz approved the question, comparison years, decomposition method and wording at the review gate. The work demonstrates SQL staging, metric definitions, arithmetic decomposition, reconciliation and communication of limits, not unaided coding.</p>
+<p>Our <b>recomputed proxy ratio</b> is summed annual write-offs divided by the average of four quarter-end balances. Agreement with published annual rates is empirical, not proof of identical denominators. A published-rate substitution changes the balance term −0.3507 and ratio term +0.8124 S$M, leaving a separate −0.46175 <b>basis-and-rounding residual</b>. H1-vs-H1 is same-season, not seasonality-free.</p>
 <ol class="method">
 <li><b>Pull</b> — MAS credit &amp; charge cards from data.gov.sg; structure-validated before replacing files, SHA-256 + coverage in a manifest (2014 Q4 → 2026 Q2). <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/download.py">src/download.py</a></li>
-<li><b>Audit</b> — units and the rate definition checked against the published annual figures <i>before</i> analysis (reconciles ±0.05 pt). <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/data_audit.md">docs/data_audit.md</a></li>
-<li><b>Stage &amp; check</b> — the wide raw file unpivots to one tidy row per quarter; 8 assertions fail loudly before anything is written. <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/sql/01_staging.sql">sql/01</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/sql/03_checks.sql">sql/03</a></li>
+<li><b>Audit</b> — manually maintained, based on independent raw-file evidence: flows, stocks and proxy-rate reconciliation. Current publisher definition notes remain a retrieval gap; the audit records what was and was not retrieved. <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/data_audit.md">docs/data_audit.md</a></li>
+<li><b>Stage &amp; check</b> — the wide raw file unpivots to one tidy row per quarter; dataset checks run before dataset publication. The complete runner stages and validates before publication; stage failures preserve outputs and ordinary publication exceptions roll back. Individual scripts do not provide whole-run rollback. Single writer only; swaps are not crash/power-loss atomic. <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/sql/01_staging.sql">sql/01</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/sql/03_checks.sql">sql/03</a></li>
 <li><b>Measure &amp; bridge</b> — complete years only; the change in write-offs splits into volume (Δrollover × avg rate) + rate (Δrate × avg rollover), midpoint weights; the balance change splits further into cards −32 + balance-per-card +1,167 S$M. <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/analysis.py">src/analysis.py</a> → <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/outputs/yearly_bridge.csv">yearly_bridge.csv</a> · <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/outputs/book_split.csv">book_split.csv</a></li>
 <li><b>Draw, write, check</b> — four figures as code, light and dark (<a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/figures.py">src/figures.py</a>); then the <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/docs/decision_memo.md">decision memo</a> and the <a href="https://github.com/faizsaifulnizam/card-book-quality/blob/main/src/build_workbook.py">Excel quick-check</a> with live bridge formulas.</li>
 </ol>
 
 <h2>Reproduce</h2>
 <pre><code>git clone https://github.com/faizsaifulnizam/card-book-quality &amp;&amp; cd card-book-quality
-uv venv .venv --python 3.12          # or: python -m venv .venv
+uv venv .venv --python 3.12 --seed   # seed pip; or: python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
-uv pip install -r requirements.txt   # or: pip install -r requirements.txt
+python -m pip install --require-hashes -r requirements.lock
 
-python src/run_all.py        # every stage in order — no network needed (raw files are committed)</code></pre>
-<p class="cap">Or run the five stages individually — download, build_dataset, analysis, figures, build_workbook (see the README). Then check <code>outputs/yearly_bridge.csv</code>: the 2025 row reads Δ +96.5 = volume +63.9 + rate +32.6, and the workbook's default selection (2026 Q2) shows write-offs 138.1 with a 4-quarter sum of 543.4 — the builder asserts the formula's row window matches. Data as of the 2026-10-03 pull.</p>
+python src/run_all.py        # vendored inputs: no data-fetch network required</code></pre>
+<p class="cap">See README for individual stages. The dependency lock fully resolves packages with hashes; optional lxml backend coverage applies only when available. Check the 2025 CSV row: +96.5 = +63.9 + +32.6. Workbook default inputs (2026 Q2) are write-offs 138.1, full-window sum 543.4 and published-rate change −0.1 pt; formula-input checks do not prove Excel evaluation. Refreshes require review of annual-source overlap, historical metadata and maintained text. No figure hash-check or live-CI success is asserted here.</p>
 
 <h2>Read more</h2>
 <ul>
@@ -125,6 +134,6 @@ python src/run_all.py        # every stage in order — no network needed (raw f
 <p>An independent, unofficial analysis by <a href="https://github.com/faizsaifulnizam">Muhammad Faiz Saifulnizam</a>. Data: MAS credit &amp; charge cards via <a href="https://data.gov.sg/datasets/d_5c8e5801c2a64e2e6b16608296ef3e02/view">data.gov.sg</a> — Singapore Open Data Licence. Code: MIT. Not a forecast; not causal advice.</p>
 </footer>
 
-</div>
+</main>
 </body>
 </html>

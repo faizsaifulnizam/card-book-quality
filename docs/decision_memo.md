@@ -1,11 +1,25 @@
-# Decision memo — Singapore card write-offs through 2025
+# Decision memo — Singapore card write-offs
 
-**The answer, in one paragraph.** Card write-offs are at a series high (519.7 S$M in 2025) for two different reasons, in sequence: the **charge-off rate reset in 2024** (+1.42 pt on the annual average, ending six quarters parked at 5.9–6.0% published), and the **revolving balance kept growing in 2025** (+14.6% average) — while the card base did not (total cards −0.4%; balance per card S$1,089 → 1,252, +15%). The 2025 dollar change splits **volume +63.9 / rate +32.6 S$M** (midpoint weights; +96.5 total). The most recent read (H1 2026 vs H1 2025: +23.7 = +27.2 − 3.5) shows the rate term no longer contributing — the rise is now a balance story.
+**Reader:** credit-risk analyst reviewing system-level trends. **Decision:** what to investigate next, not whether to change lending policy. **Fixed snapshot:** pulled 2026-10-03; quarterly coverage through 2026 Q2. All issuers in Singapore, not one bank.
 
-**What is known / what is not.** Known: system write-offs, balances, card counts and the rate, quarterly, 2014 Q4 – 2026 Q2; the split above; the 2020 contrast (a rate event on a *shrinking* book: +31.8 = −41.2 + 73.0). **Not in this file:** issuer, product, vintage, cure/recovery, borrower mix — and *why* the rate moved. One break is unexplained and flagged: principal cardholders fell 4.0% in a single quarter at 2025 Q3 and stayed down.
+## Finding
 
-**What would change the view.** (1) A revised 2026 quarter — the newest data can be restated. (2) **Rollover/billings rolling over** (0.321 → 0.344 across 2024→25): if revolving keeps growing faster than spending, "volume" is stress accumulating, not expansion. (3) The rate leaving its 5.9% shelf.
+2025 quarterly write-offs sum to **S$519.7 million**, up **S$96.5 million** from 2024. The arithmetic split is **balance +63.9 / recomputed proxy ratio +32.6 S$M**. The larger ratio step happened in 2024 (+1.42 percentage points on the annual proxy), and the published rate has since sat at **5.9–6.0% for six quarters**, 2025 Q1–2026 Q2. H1 2026 vs H1 2025 is a same-season comparison: **+23.7 = +27.2 − 3.5**. The ratio term subtracts in that window; this is not a forecast of the next quarter.
 
-**One caveat to carry.** "Volume" is not a clean bill of health — balances rise when spending grows *and* when repayment slows (distress not yet written off; write-offs lag). This split measures how much of the change is balance vs rate; it cannot separate the two kinds of balance growth.
+Average reported total card count fell 0.4%, while aggregate rollover balance per reported card rose 15%. The balance split's card term is about **−32 S$M using total cards** but **+30 S$M using principal cards alone**; per-card terms dominate either basis. These are proxies, not deduplicated customers or balances among revolving borrowers. Principal counts fell 4.0% from 2025 Q2 to Q3, an unexplained break that affects both comparisons.
 
-**Receipts.** [`../outputs/yearly_bridge.csv`](../outputs/yearly_bridge.csv) (the split) · [`../outputs/book_split.csv`](../outputs/book_split.csv) (cards × per-card) · [`sensitivity.md`](sensitivity.md) (windows/bases/weights) · [`data_audit.md`](data_audit.md) (definitions, reconciliations, the flagged break). Method: Δ write-offs = Δrollover × avg rate (volume) + Δrate × avg rollover (rate); with midpoint weights the two terms exhaust the change exactly — algebraic closure, not a finding.
+## Recommended next action
+
+1. **Monitor balances alongside repayment and delinquency**, not write-offs alone. Obtain utilisation, revolving-account counts and borrower/vintage information before interpreting rising balances as stress or healthy expansion.
+2. **Investigate the Q3 2025 principal-count break** with publisher or issuer definitions. Retain the unadjusted data and compare annual-average with year-end measures meanwhile; do not invent an adjustment.
+3. **Seek issuer-level evidence before any lending-policy change.** This aggregate arithmetic identifies where the dollar change sits, not its cause or the institution responsible.
+
+## What would change this reading
+
+A source revision; a published ratio moving away from its observed 5.9–6.0% range; or repayment/delinquency evidence that distinguishes spending-led balances from slower repayment. Average quarter-end rollover divided by average quarterly billings rose **0.321 → 0.344** in 2024–2025. That stock-to-flow pattern **could indicate slower repayment and warrants investigation**, but is neither the share of spending unpaid nor proof of accumulating stress.
+
+## Limits and evidence
+
+The recomputed proxy ratio uses average **quarter-end** balances; close agreement with published annual rates does not establish identical denominators. Ratio changes may involve mix, accounting, write-off timing, recoveries or denominator movement, not only credit quality. No borrower-level, issuer, product, vintage or recovery attribution is available here. Midpoint closure is algebra, not independent evidence of a causal story.
+
+[Annual bridge](../outputs/yearly_bridge.csv) · [Card/balance split](../outputs/book_split.csv) · [Window and denominator sensitivity](sensitivity.md) · [Data audit and source trail](data_audit.md).

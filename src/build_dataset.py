@@ -8,6 +8,7 @@ to a temp path then atomically replaced — a failing run never touches the exis
 Paths are absolute (the staging SQL's raw path is substituted below), so the script works
 from any working directory.
 """
+import csv
 import os
 import sys
 from pathlib import Path
@@ -42,7 +43,11 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
 
-    raw_cells = q(con, f"SELECT count(*) FROM ({UNPIVOT})")[0][0]
+    with open(RAW, newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    raw_cells = sum(len(row) - 1 for row in rows[1:])
+    missing = sum(not value.strip() for row in rows[1:] for value in row[1:])
+    present = raw_cells - missing
     con.execute("CREATE OR REPLACE VIEW raw_long AS " + UNPIVOT)
     # The staging SQL references the raw file by a repo-relative path; substitute the
     # absolute path so no step depends on the process working directory.
@@ -55,13 +60,16 @@ def main():
                                   + count(write_offs_sgd_m) + count(charge_off_rate_pct)
                              FROM quarterly""")[0][0]
     excl_any = q(con, f"SELECT count(*) FROM raw_long WHERE {ANY_RULE}")[0][0]
-    print(f"raw cells:    {raw_cells}  (6 series × {raw_cells // 6} quarters)")
+    print(f"raw cells:    {raw_cells}  (physical CSV grid)")
+    print(f"present:      {present}")
+    print(f"missing:      {missing}")
     print(f"staged:       {quarters} quarters · {staged_cells} cells")
     print(f"excluded:     {raw_cells - staged_cells}  ({100 * (raw_cells - staged_cells) / raw_cells:.3f}%)")
     print("exclusion rules (per-rule counts; a cell may match more than one):")
     for rule, expr in RULES:
         k = q(con, f"SELECT count(*) FROM raw_long WHERE {expr}")[0][0]
         print(f"    rule [{rule}]: {k}")
+    excl_any += missing
     ok_recon = (staged_cells + excl_any) == raw_cells
     print(f"    [{'PASS' if ok_recon else 'FAIL'}] retained + excluded == raw cells "
           f"({staged_cells} + {excl_any} vs {raw_cells})")
@@ -80,7 +88,10 @@ def main():
 
     pq = OUT_DIR / "quarterly.parquet"
     tmp = OUT_DIR / "quarterly.parquet.tmp"
-    con.sql(f"COPY quarterly TO '{tmp.as_posix()}' (FORMAT PARQUET)")
+    con.sql(f"""COPY (SELECT * REPLACE (
+        CAST(principal_cardholders AS BIGINT) AS principal_cardholders,
+        CAST(supplementary_cardholders AS BIGINT) AS supplementary_cardholders)
+        FROM quarterly) TO '{tmp.as_posix()}' (FORMAT PARQUET)""")
     os.replace(tmp, pq)
     print(f"wrote: {pq.as_posix()}  ({pq.stat().st_size} bytes)")
 
