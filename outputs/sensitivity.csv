@@ -1,0 +1,7 @@
+variant,window_old,window_new,write_offs_old_sgd_m,write_offs_new_sgd_m,delta_sgd_m,volume_sgd_m,rate_sgd_m,interaction_sgd_m,rate_old_pct,rate_new_pct
+annual 2025 vs 2024 (base),2024-01 → 2024-10,2025-01 → 2025-10,423.2,519.7,96.5,63.9,32.6,0.0,5.44,5.83
+annual 2020 vs 2019 (peak year),2019-01 → 2019-10,2020-01 → 2020-10,364.9,396.7,31.8,-41.2,73.0,0.0,5.85,7.08
+trailing 4 quarters,2024-07 → 2025-04,2025-07 → 2026-04,464.1,543.4,79.3,58.44,20.86,-0.0,5.55,5.79
+"same two quarters, year apart (H1-style)",2025-01 → 2025-04,2026-01 → 2026-04,250.7,274.4,23.7,27.23,-3.53,-0.0,5.83,5.75
+published annual-rate basis (2025 vs 2024),2024,2025,423.2,519.7,96.5,63.55,33.41,-0.46,5.4,5.8
+base-weighted 3-term (2025 vs 2024),2024,2025,423.2,519.7,96.5,61.69,30.38,4.43,5.44,5.83
