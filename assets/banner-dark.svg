@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="card-book-quality — did card write-offs rise because the book grew or because the charge-off rate worsened: a six-repo series on Singapore's public data">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="card-book-quality — did card write-offs rise because the book grew or because the charge-off rate worsened">
   <rect width="1280" height="320" fill="#14293D"/>
-  <title>card-book-quality — a six-repo series on Singapore's public data</title>
+  <title>card-book-quality — did card write-offs rise because the book grew, or because the charge-off rate worsened</title>
   <text x="72" y="118" font-family="Georgia, 'Source Serif 4', serif" font-size="58" fill="#F3F0EA">card-book-quality</text>
   <rect x="72" y="146" width="430" height="4" fill="#D97E4F"/>
   <text x="72" y="196" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#A9B6C1">In 2025, credit-card write-offs rose S$96.5M — did</text>
@@ -23,5 +23,5 @@
   <text x="907" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">volume</text>
   <text x="987" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">rate</text>
   <text x="1067" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">2025</text>
-  <text x="1208" y="306" text-anchor="end" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#D97E4F">A six-repo series on Singapore's public data · 2 of 6</text>
+  <text x="1208" y="306" text-anchor="end" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#D97E4F">Data: MAS via data.gov.sg · Singapore Open Data Licence</text>
 </svg>
