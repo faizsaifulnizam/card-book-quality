@@ -7,7 +7,10 @@ Two official files (both MAS, via data.gov.sg):
 Flow: initiate-download -> poll-download -> signed URL (v1 public API).
 Run: python src/download.py [--force]   (skips if the files already exist)
 
-Downloads land in .part files and are structurally validated BEFORE replacing any
+Both sources are staged and structurally validated, with complete-year overlap
+checked, before the pair and manifest are published. Ordinary swap failures roll
+back; publication is not power-loss/process-kill atomic and requires one writer.
+Downloads land in temporary files and are structurally validated BEFORE replacing any
 existing CSV (validate-before-write; a failed pull leaves existing files untouched):
 header shape, the six expected series present, per-row value counts, numeric values
 (annual may carry 'na'), quarter contiguity, and a freshness floor (the latest quarter
@@ -23,7 +26,10 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import re
+import shutil
+import tempfile
 import sys
 import time
 import urllib.request as u
@@ -206,7 +212,62 @@ def validate_annual(data):
     }, []
 
 
-def write_manifest(infos, retrieved_at):
+def validate_source_overlap(quarterly, annual):
+    """Policy: complete quarterly years must have numeric annual cross-checks."""
+    qheader, _ = _shape(quarterly.decode('utf-8'))
+    aheader, abody = _shape(annual.decode('utf-8'))
+    qyears = {}
+    for label in qheader[1:]:
+        match = QCOL.fullmatch(label)
+        if match:
+            qyears.setdefault(match.group(1), set()).add(match.group(2))
+    complete = {year for year, quarters in qyears.items() if len(quarters) == 4}
+    required = {'Total Card Billings', 'Bad Debts Written Off', 'Rollover Balance',
+                'Principal Cardholders', 'Charge-Off Rates'}
+    numeric = {year for i, year in enumerate(aheader[1:], 1)
+               if all(NUM.fullmatch(row[i]) for row in abody if row[0] in required)}
+    missing = sorted(complete - numeric)
+    if missing:
+        raise SystemExit(f'annual cross-check unavailable for complete quarterly years {missing}; '
+                         'snapshot waits for published annual data')
+    return sorted(complete)
+
+
+def publish_paths(pairs):
+    """Publish validated paths with rollback for ordinary exceptions.
+
+    Not crash-atomic or safe for concurrent writers: a process kill/power loss can
+    interrupt the swaps. Keep recovery backups on rollback failure.
+    """
+    pairs = [(Path(src), Path(dst)) for src, dst in pairs]
+    backup = Path(tempfile.mkdtemp(prefix='.publish-backup-', dir=pairs[0][1].parent))
+    saved, installed = [], []
+    try:
+        for i, (src, dst) in enumerate(pairs):
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if dst.exists():
+                previous = backup / str(i)
+                os.replace(dst, previous)
+                saved.append((previous, dst))
+            os.replace(src, dst)
+            installed.append(dst)
+    except BaseException:
+        try:
+            for dst in reversed(installed):
+                if dst.is_dir():
+                    shutil.rmtree(dst)
+                else:
+                    dst.unlink()
+            for previous, dst in reversed(saved):
+                os.replace(previous, dst)
+        except BaseException as recovery:
+            raise RuntimeError(f'rollback failed; recovery backup: {backup}') from recovery
+        shutil.rmtree(backup)
+        raise
+    shutil.rmtree(backup)
+
+
+def write_manifest(infos, retrieved_at, path=None):
     m = {
         "source": "data.gov.sg — api-open v1 public API (signed URL flow)",
         "retrieved_at": retrieved_at,
@@ -220,7 +281,7 @@ def write_manifest(infos, retrieved_at):
             "role": ds["role"],
             **info,
         }
-    MANIFEST.write_text(json.dumps(m, indent=2), encoding="utf-8")
+    (path or MANIFEST).write_text(json.dumps(m, indent=2), encoding="utf-8")
     print("manifest:", MANIFEST.as_posix())
     for fname, info in m["files"].items():
         cov = (f"{info['quarter_min']} → {info['quarter_max']}" if "quarter_max" in info
@@ -239,18 +300,7 @@ def main():
         for p in present.values():
             print("  ", p.as_posix())
         if not MANIFEST.exists():
-            infos = {}
-            ok = True
-            for ds in DATASETS:
-                data = present[ds["key"]].read_bytes()
-                info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(data)
-                if problems:
-                    ok = False
-                    print(f"  [FAIL] existing {ds['file']}: {problems}")
-                infos[ds["key"]] = info
-            if ok:
-                mtime = datetime.fromtimestamp(present["quarterly"].stat().st_mtime, tz=timezone.utc).isoformat(timespec="seconds")
-                write_manifest(infos, mtime)
+            raise SystemExit("missing provenance manifest — stopped; use --force for a validated refresh")
         else:
             # byte-level receipt on the no-op path: files must still match the manifest
             m = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -259,29 +309,29 @@ def main():
                 got = hashlib.sha256(present[ds["key"]].read_bytes()).hexdigest()
                 print(f"   [{'OK' if got == want else 'MISMATCH'}] {ds['file']} sha256 {got[:12]}…")
                 if got != want:
-                    print("          differs from the manifest — re-run with --force to re-pull and refresh it")
+                    raise SystemExit("raw file differs from the manifest — stopped; use --force for a validated refresh")
+        validate_source_overlap(*(p.read_bytes() for p in present.values()))
         return
 
-    infos = {}
-    for ds in DATASETS:
-        out = RAW / ds["file"]
-        part = out.with_name(out.name + ".part")
-        print(f"downloading {ds['dataset_id']} ({ds['role']}) …")
-        data, err = fetch_to_part(ds["dataset_id"], part)
-        if err:
-            part.unlink(missing_ok=True)
-            raise SystemExit(f"{ds['file']}: {err} — existing files left untouched")
-        data = part.read_bytes()
-        info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(data)
-        if problems:
-            part.unlink(missing_ok=True)
-            raise SystemExit(f"{ds['file']} failed structure validation — kept existing file:\n  - " + "\n  - ".join(problems))
-        part.replace(out)
-        infos[ds["key"]] = info
-        cov = (f"{info['quarter_min']} → {info['quarter_max']}" if "quarter_max" in info else f"{info['year_min']} → {info['year_max']}")
-        print(f"  ok: {info['bytes']} bytes · {info['rows']} series rows · coverage {cov}")
-
-    write_manifest(infos, datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    RAW.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.source-stage-', dir=RAW.parent) as temp:
+        staged = Path(temp)
+        infos = {}
+        for ds in DATASETS:
+            part = staged / ds["file"]
+            print(f"downloading {ds['dataset_id']} ({ds['role']}) …")
+            data, err = fetch_to_part(ds["dataset_id"], part)
+            if err:
+                raise SystemExit(f"{ds['file']}: {err} — existing snapshot left untouched")
+            info, problems = (validate_quarterly if ds["key"] == "quarterly" else validate_annual)(part.read_bytes())
+            if problems:
+                raise SystemExit(f"{ds['file']} failed structure validation — existing snapshot left untouched: {problems}")
+            infos[ds["key"]] = info
+        validate_source_overlap(*( (staged / ds["file"]).read_bytes() for ds in DATASETS ))
+        manifest = staged / MANIFEST.name
+        write_manifest(infos, datetime.now(timezone.utc).isoformat(timespec="seconds"), manifest)
+        publish_paths([(staged / ds['file'], RAW / ds['file']) for ds in DATASETS]
+                      + [(manifest, MANIFEST)])
 
 
 if __name__ == "__main__":

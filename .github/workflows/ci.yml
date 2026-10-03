@@ -20,19 +20,19 @@ jobs:
           python-version-file: ".python-version"
           cache: pip
 
-      - name: Install pinned dependencies
-        run: pip install -r requirements.txt
+      - name: Install hash-locked dependencies
+        run: python -m pip install --require-hashes -r requirements.lock
 
-      - name: Run the full pipeline on the vendored raw files (no network)
+      - name: Run the validated snapshot pipeline (no network)
+        run: python src/run_all.py
+
+      - name: Calculation, spreadsheet structure, presentation and failure regressions
         run: |
-          python src/download.py        # files present → skip + verify sha256 vs the manifest
-          python src/build_dataset.py
-          python src/analysis.py
-          python src/figures.py
-          python src/build_workbook.py
+          python -m unittest discover -s tests -p 'test_*.py' -v
+          python tests/test_bridge.py
 
-      - name: Unit test — the bridge on made-up numbers (no data needed)
-        run: python tests/test_bridge.py
+      - name: Repeat generation and compare artifact SHA-256 hashes
+        run: python tests/verify_reproducibility.py
 
       - name: Committed artifacts & receipts (incl. locked headline numbers)
         run: python tests/smoke_test.py

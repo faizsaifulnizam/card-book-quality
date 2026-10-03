@@ -78,8 +78,11 @@ def bridge(old, new):
     dW = new["w"] - old["w"]
     volume = dR * (old["r"] + new["r"]) / 2
     rate = dr * (old["R"] + new["R"]) / 2
+    residual = dW - volume - rate
+    if abs(residual) <= 1e-12 * max(1.0, abs(dW), abs(volume), abs(rate)):
+        residual = 0.0  # Numerical noise is not a signed interaction.
     return {
-        "dW": dW, "volume": volume, "rate": rate, "inter": dW - volume - rate,
+        "dW": dW, "volume": volume, "rate": rate, "inter": residual,
         "volume_b": dR * old["r"], "rate_b": dr * old["R"], "inter_b": dR * dr,
     }
 
@@ -91,6 +94,64 @@ def year_quarters(year):
 def fmt_row(label, d):
     return (f"   {label:<28} Δ {d['dW']:+7.1f} = volume {d['volume']:+7.1f} + rate {d['rate']:+7.1f} "
             f"+ inter {d['inter']:+.2f} S$M")
+
+
+def book_split(con):
+    """Descriptive ratios per reported card, not unique customers/revolving accounts.
+
+    Annual-average and Q4-only splits intentionally retain the reported Q3 break;
+    no unsupported adjustment is made to either denominator.
+    """
+    cards = q(con, """
+        SELECT year(quarter), avg(principal_cardholders), avg(supplementary_cardholders),
+               avg(rollover_sgd_m), avg(billings_sgd_m), sum(write_offs_sgd_m),
+               max(CASE WHEN month(quarter) = 10 THEN principal_cardholders END),
+               max(CASE WHEN month(quarter) = 10 THEN supplementary_cardholders END),
+               max(CASE WHEN month(quarter) = 10 THEN rollover_sgd_m END)
+        FROM quarterly GROUP BY 1 HAVING count(*) = 4 ORDER BY 1""")
+    rows = []
+    for old, new in zip(cards, cards[1:]):
+        assert new[0] == old[0] + 1, "book split requires consecutive complete years"
+        y, p1, s1, r1, bill1, w1, pe1, se1, re1 = map(float, new)
+        _, p0, s0, r0, _, _, pe0, se0, re0 = map(float, old)
+        c0, c1 = p0 + s0, p1 + s1
+        # Reuse the product bridge for rollover = count × rollover/count.
+        def split(n0, n1, balance0, balance1):
+            b = bridge({'w': balance0, 'R': n0, 'r': balance0 / n0},
+                       {'w': balance1, 'R': n1, 'r': balance1 / n1})
+            assert abs(b['inter']) <= 1e-6, "book split does not close"
+            return b
+        total = split(c0, c1, r0, r1)
+        principal = split(p0, p1, r0, r1)
+        end_total = split(pe0 + se0, pe1 + se1, re0, re1)
+        end_principal = split(pe0, pe1, re0, re1)
+        rows.append({
+            'year': int(y), 'previous_year': int(old[0]),
+            'avg_principal_cards': int(round(p1)), 'avg_supplementary_cards': int(round(s1)),
+            'avg_total_cards': int(round(c1)), 'rollover_per_card_sgd': int(round(r1 * 1e6 / c1)),
+            'write_offs_per_principal_card_sgd': int(round(w1 * 1e6 / p1)),
+            'rollover_to_billings': round(r1 / bill1, 3),
+            'delta_rollover_sgd_m': round(r1 - r0, 2),
+            'cards_effect_sgd_m': round(total['volume'], 2),
+            'balance_per_card_effect_sgd_m': round(total['rate'], 2),
+            'rollover_per_principal_card_sgd': int(round(r1 * 1e6 / p1)),
+            'principal_cards_effect_sgd_m': round(principal['volume'], 2),
+            'balance_per_principal_card_effect_sgd_m': round(principal['rate'], 2),
+            'avg_total_cards_change_pct': round((c1 / c0 - 1) * 100, 3),
+            'avg_principal_cards_change_pct': round((p1 / p0 - 1) * 100, 3),
+            'year_end_principal_cards': int(pe1), 'year_end_supplementary_cards': int(se1),
+            'year_end_total_cards': int(pe1 + se1), 'year_end_rollover_sgd_m': round(re1, 2),
+            'year_end_rollover_per_card_sgd': int(round(re1 * 1e6 / (pe1 + se1))),
+            'year_end_rollover_per_principal_card_sgd': int(round(re1 * 1e6 / pe1)),
+            'year_end_delta_rollover_sgd_m': round(re1 - re0, 2),
+            'year_end_cards_effect_sgd_m': round(end_total['volume'], 2),
+            'year_end_balance_per_card_effect_sgd_m': round(end_total['rate'], 2),
+            'year_end_principal_cards_effect_sgd_m': round(end_principal['volume'], 2),
+            'year_end_balance_per_principal_card_effect_sgd_m': round(end_principal['rate'], 2),
+            'year_end_total_cards_change_pct': round(((pe1 + se1) / (pe0 + se0) - 1) * 100, 3),
+            'year_end_principal_cards_change_pct': round((pe1 / pe0 - 1) * 100, 3),
+        })
+    return rows
 
 
 def main():
@@ -128,8 +189,8 @@ def main():
     print()
     print("== validation (runs BEFORE any file is written) ==")
     comparable = [(int(y[0]), y[4]) for y in years if int(y[0]) in ann_rate]
-    max_diff = max(abs(rc - ann_rate[y]) for y, rc in comparable)
-    ok_tol = len(comparable) >= 8 and max_diff <= RATE_TOL
+    max_diff = max((abs(rc - ann_rate[y]) for y, rc in comparable), default=0.0)
+    ok_tol = bool(comparable) and max_diff <= RATE_TOL
     print(f"   [{'PASS' if ok_tol else 'FAIL'}] recomputed vs PUBLISHED ANNUAL rate: max |Δ| {max_diff:.3f} pt "
           f"over {len(comparable)} years (tolerance {RATE_TOL})")
     failed |= not ok_tol
@@ -154,14 +215,17 @@ def main():
                max(CASE WHEN quarter = make_date(year(quarter), 10, 1) THEN principal_cardholders END)
         FROM quarterly GROUP BY 1 HAVING count(*) = 4 ORDER BY 1""")}
     dflow, dstocks = 0.0, 0.0
-    for y in complete:
+    overlap = [y for y in complete if all(y in values for values in ann_num.values())]
+    pending = [y for y in complete if y not in overlap or y not in ann_rate]
+    print(f"   annual source overlap: {len(overlap)} complete years; annual cross-check pending: {pending}")
+    for y in overlap:
         b_q, w_q, r_q4, p_q4 = qsum[y]
         dflow = max(dflow, abs(w_q - ann_num["Bad Debts Written Off"][y]),
                     abs(b_q - ann_num["Total Card Billings"][y]))
         dstocks = max(dstocks, abs(r_q4 - ann_num["Rollover Balance"][y]),
                       abs(p_q4 - ann_num["Principal Cardholders"][y]))
-    ok_flow, ok_stock = round(dflow, 9) <= 0.1, dstocks == 0
-    print(f"   [{'PASS' if ok_flow else 'FAIL'}] flows vs published annual: max |Δ| {dflow:.2f} S$M over {len(complete)} years "
+    ok_flow, ok_stock = bool(overlap) and round(dflow, 9) <= 0.1, bool(overlap) and dstocks == 0
+    print(f"   [{'PASS' if ok_flow else 'FAIL'}] flows vs published annual: max |Δ| {dflow:.2f} S$M over {len(overlap)} overlapping years "
           f"(write-offs + billings — quarterly sums vs annual; tolerance 0.1)")
     print(f"   [{'PASS' if ok_stock else 'FAIL'}] stocks == Q4 exactly: rollover & principal cardholders vs published annual "
           f"(max |Δ| {dstocks:.0f} — year-end values; the bridge's balance is the average of the four quarter-ends, not this)")
@@ -192,9 +256,11 @@ def main():
     print(f"   rate path: {yrow[latest_year - 2][4]:.2f}% ({latest_year - 2}) → {yrow[latest_year - 1][4]:.2f}% "
           f"(+{step1:.2f} pt) → {yrow[latest_year][4]:.2f}% (+{step2:.2f} pt) — the step-up landed in {latest_year - 1}")
 
-    peak_year = max(complete, key=lambda y: ann_rate.get(y, yrow[y][4]))
-    print(f"   peak year (max published ANNUAL rate, from data): {peak_year} "
-          f"({ann_rate.get(peak_year, yrow[peak_year][5]):.1f}% published / {yrow[peak_year][4]:.2f}% recomputed)")
+    published_years = [y for y in complete if y in ann_rate]
+    peak_year = max(published_years, key=ann_rate.get) if published_years else max(complete, key=lambda y: yrow[y][4])
+    peak_basis = f"{ann_rate[peak_year]:.1f}% published annual" if published_years else "published comparison pending"
+    print(f"   peak year ({'published annual' if published_years else 'proxy'} basis, source overlap): {peak_year} "
+          f"({peak_basis} / {yrow[peak_year][4]:.2f}% recomputed proxy)")
 
     if failed:
         print()
@@ -204,7 +270,7 @@ def main():
     # ---- yearly_bridge.csv ----
     cols = ["year", "previous_year", "write_offs_sgd_m", "avg_rollover_sgd_m", "rate_pct",
             "rate_pct_pub_annual", "delta_write_offs_sgd_m", "volume_sgd_m", "rate_sgd_m",
-            "interaction_sgd_m", "check_sgd_m"]
+            "interaction_sgd_m", "check_sgd_m", "annual_crosscheck_status"]
     rows_out = []
     for y, old, new, b, _ok in bridges:
         rows_out.append({
@@ -212,7 +278,8 @@ def main():
             "write_offs_sgd_m": round(new["w"], 2),
             "avg_rollover_sgd_m": round(new["R"], 2),
             "rate_pct": round(new["rate_pct"], 3),
-            "rate_pct_pub_annual": ann_rate.get(y, round(new["rate_pub"], 1)),
+            "rate_pct_pub_annual": ann_rate.get(y, ""),
+            "annual_crosscheck_status": "pending" if y in pending else "checked",
             "delta_write_offs_sgd_m": round(b["dW"], 2),
             "volume_sgd_m": round(b["volume"], 2),
             "rate_sgd_m": round(b["rate"], 2),
@@ -225,36 +292,12 @@ def main():
     # ---- the book, per card: Δrollover split into cards effect × balance-per-card effect ----
     print()
     print("== the book, per card (Δrollover = cards effect + balance-per-card effect; midpoint) ==")
-    cards = {int(r[0]): r for r in q(con, """
-        SELECT year(quarter) AS y, avg(principal_cardholders), avg(supplementary_cardholders),
-               avg(rollover_sgd_m), avg(billings_sgd_m), sum(write_offs_sgd_m)
-        FROM quarterly GROUP BY 1 HAVING count(*) = 4 ORDER BY 1""")}
-    book_rows = []
-    for y in complete[1:]:
-        y0 = y - 1
-        p0, s0, r_0, b_0 = (float(cards[y0][i]) for i in range(1, 5))
-        p1, s1, r_1, b_1, w_1 = (float(cards[y][i]) for i in range(1, 6))
-        c0, c1 = p0 + s0, p1 + s1
-        pc0, pc1 = r_0 * 1e6 / c0, r_1 * 1e6 / c1
-        d_r = r_1 - r_0
-        cards_eff = (c1 - c0) * (pc0 + pc1) / 2 / 1e6
-        bpc_eff = (pc1 - pc0) * (c0 + c1) / 2 / 1e6
-        ok = abs(cards_eff + bpc_eff - d_r) <= 1e-6 * max(1.0, abs(d_r))
-        failed |= not ok
-        book_rows.append({
-            "year": y, "previous_year": y0,
-            "avg_principal_cards": int(round(p1)),
-            "avg_supplementary_cards": int(round(s1)),
-            "avg_total_cards": int(round(c1)),
-            "rollover_per_card_sgd": int(round(pc1)),
-            "write_offs_per_principal_card_sgd": int(round(w_1 * 1e6 / p1)),
-            "rollover_to_billings": round(r_1 / b_1, 3),
-            "delta_rollover_sgd_m": round(d_r, 2),
-            "cards_effect_sgd_m": round(cards_eff, 2),
-            "balance_per_card_effect_sgd_m": round(bpc_eff, 2)})
-        print(f"   {y} vs {y0}: rollover {d_r:+8.1f} = cards {cards_eff:+7.1f} + balance/card {bpc_eff:+7.1f} S$M "
-              f"· S${pc1:,.0f}/card · write-offs S${w_1 * 1e6 / p1:,.0f}/principal card "
-              f"· rollover/billings {r_1 / b_1:.3f}" + ("" if ok else "  [FAIL closure]"))
+    book_rows = book_split(con)
+    for row in book_rows:
+        print(f"   {row['year']} vs {row['previous_year']}: Δrollover {row['delta_rollover_sgd_m']:+.2f} S$M "
+              f"· total-card count {row['cards_effect_sgd_m']:+.2f} / per-card {row['balance_per_card_effect_sgd_m']:+.2f} "
+              f"· principal count {row['principal_cards_effect_sgd_m']:+.2f} / per-principal {row['balance_per_principal_card_effect_sgd_m']:+.2f} "
+              f"· year-end principal count {row['year_end_principal_cards_effect_sgd_m']:+.2f} / per-principal {row['year_end_balance_per_principal_card_effect_sgd_m']:+.2f}")
 
     # ---- sensitivity ----
     print()
@@ -287,6 +330,9 @@ def main():
         ("same two quarters, year apart (H1-style)", prev2, last2),
     ]
     for label, oq, nq_ in labels:
+        if label.endswith('(peak year)') and peak_year - 1 not in complete:
+            print(f"   peak-year sensitivity pending: {peak_year - 1} is not a complete quarterly year")
+            continue
         row, b = sens_row(label, oq, nq_)
         rows_s.append(row)
         eps = 1e-9 * max(1.0, abs(b["dW"]))
@@ -294,21 +340,34 @@ def main():
         failed |= not ok
 
     # published-rate basis: uses the published ANNUAL rates instead of the recomputed ones
+    pub_pairs = [y for y in complete[1:] if y in ann_rate and y - 1 in ann_rate]
+    if pub_pairs:
+        pub_year = pub_pairs[-1]
+        old = window_stats(con, year_quarters(pub_year - 1))
+        new = window_stats(con, year_quarters(pub_year))
+        r0p, r1p = ann_rate[pub_year - 1] / 100, ann_rate[pub_year] / 100
+        vol_p = (new["R"] - old["R"]) * (r0p + r1p) / 2
+        rate_p = (r1p - r0p) * (old["R"] + new["R"]) / 2
+        rows_s.append({
+            "variant": f"published annual-rate basis ({pub_year} vs {pub_year - 1})",
+            "window_old": str(pub_year - 1), "window_new": str(pub_year),
+            "write_offs_old_sgd_m": round(old["w"], 2), "write_offs_new_sgd_m": round(new["w"], 2),
+            "delta_sgd_m": round(new["w"] - old["w"], 2),
+            "volume_sgd_m": round(vol_p, 2), "rate_sgd_m": round(rate_p, 2),
+            "joint_sgd_m": "",  # closure gap is a basis-and-rounding residual, not a joint term
+            "residual_sgd_m": round((new["w"] - old["w"]) - vol_p - rate_p, 2),
+            "rate_old_pct": ann_rate[pub_year - 1], "rate_new_pct": ann_rate[pub_year],
+        })
+        recomputed = bridge(old, new)
+        print(f"   published vs proxy ({pub_year}): volume difference {vol_p - recomputed['volume']:+.4f} S$M; "
+              f"rate difference {rate_p - recomputed['rate']:+.4f} S$M; basis-and-rounding residual "
+              f"{new['w'] - old['w'] - vol_p - rate_p:+.4f} S$M")
+    else:
+        print("   published-rate sensitivity pending: no adjacent complete years with published annual rates")
+
+    # base-weighted alternative uses the latest quarterly year, even if the annual source lags.
     old = window_stats(con, year_quarters(latest_year - 1))
     new = window_stats(con, year_quarters(latest_year))
-    r0p, r1p = ann_rate[latest_year - 1] / 100, ann_rate[latest_year] / 100
-    vol_p = (new["R"] - old["R"]) * (r0p + r1p) / 2
-    rate_p = (r1p - r0p) * (old["R"] + new["R"]) / 2
-    rows_s.append({
-        "variant": f"published annual-rate basis ({latest_year} vs {latest_year - 1})",
-        "window_old": f"{latest_year - 1}", "window_new": f"{latest_year}",
-        "write_offs_old_sgd_m": round(old["w"], 2), "write_offs_new_sgd_m": round(new["w"], 2),
-        "delta_sgd_m": round(new["w"] - old["w"], 2),
-        "volume_sgd_m": round(vol_p, 2), "rate_sgd_m": round(rate_p, 2),
-        "joint_sgd_m": "",  # published rates don't define the joint term — the closure gap below is a residual
-        "residual_sgd_m": round((new["w"] - old["w"]) - vol_p - rate_p, 2),
-        "rate_old_pct": ann_rate[latest_year - 1], "rate_new_pct": ann_rate[latest_year],
-    })
 
     # base-weighted alternative: anchors at period-0 weights; the joint term is real
     b = bridge(old, new)
@@ -324,6 +383,11 @@ def main():
         "residual_sgd_m": round(b["dW"] - b["volume_b"] - b["rate_b"] - b["inter_b"], 2),
         "rate_old_pct": round(old["rate_pct"], 2), "rate_new_pct": round(new["rate_pct"], 2),
     })
+    # Rounded zeros are unsigned in receipts and CSVs.
+    for row in rows_out + book_rows + rows_s:
+        for key, value in row.items():
+            if isinstance(value, float) and value == 0:
+                row[key] = 0.0
     for r_ in rows_s:
         jt = r_["joint_sgd_m"]
         jt_s = f"{jt:+7.2f}" if isinstance(jt, (int, float)) else "     — "

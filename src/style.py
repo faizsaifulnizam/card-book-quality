@@ -18,7 +18,7 @@ FONTS = Path(__file__).resolve().parent.parent / "docs" / "fonts"  # single font
 
 
 def use_series_style(dark: bool = False):
-    """Apply the Six-on-SG style — light by default, `dark=True` for the dark twin. Safe to call more than once."""
+    """Apply the shared portfolio style — light by default, `dark=True` for the dark twin. Safe to call more than once."""
     for ttf in ("Inter-Regular.ttf", "Inter-SemiBold.ttf"):
         f = FONTS / ttf
         if f.exists():

@@ -5,6 +5,8 @@
 -- Writes: table `quarterly`; parquet copy handled by src/build_dataset.py.
 -- The raw file is wide: one row per series, one column per quarter label
 -- ('20262Q' = 2026 Q2). Unpivot to long, parse the quarter, TRY_CAST values,
+-- Card counts deliberately remain numeric/unrounded until sql/03 checks pass;
+-- src/build_dataset.py casts them to BIGINT only when writing validated parquet.
 -- then pivot back to one row per quarter. The WHERE clause below mirrors the
 -- exclusion rules counted in src/build_dataset.py (retained + excluded == raw cells).
 
@@ -28,8 +30,8 @@ WITH long AS (
 )
 SELECT
     quarter,
-    CAST(max(CASE WHEN series = 'Principal Cardholders' THEN v END) AS BIGINT)     AS principal_cardholders,
-    CAST(max(CASE WHEN series = 'Supplementary Cardholders' THEN v END) AS BIGINT) AS supplementary_cardholders,
+    max(CASE WHEN series = 'Principal Cardholders' THEN v END)     AS principal_cardholders,
+    max(CASE WHEN series = 'Supplementary Cardholders' THEN v END) AS supplementary_cardholders,
     max(CASE WHEN series = 'Total Card Billings' THEN v END)      AS billings_sgd_m,
     max(CASE WHEN series = 'Rollover Balance' THEN v END)         AS rollover_sgd_m,
     max(CASE WHEN series = 'Bad Debts Written Off' THEN v END)    AS write_offs_sgd_m,
