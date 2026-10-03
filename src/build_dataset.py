@@ -1,10 +1,12 @@
-"""Build the processed dataset: raw wide CSV -> staging (sql/01) -> checks (sql/05) -> parquet.
+"""Build the processed dataset: raw wide CSV -> staging (sql/01) -> checks (sql/03) -> parquet.
 
 Run (repo root): python src/build_dataset.py
 Receipts printed: in/out cell counts, exclusion breakdown, check results. Exit 1 if any check fails.
 
 Order matters: every check runs BEFORE the parquet is produced, and the file is written
 to a temp path then atomically replaced — a failing run never touches the existing output.
+Paths are absolute (the staging SQL's raw path is substituted below), so the script works
+from any working directory.
 """
 import os
 import sys
@@ -14,7 +16,7 @@ import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
 STAGING = ROOT / "sql/01_staging.sql"
-CHECKS = ROOT / "sql/05_checks.sql"
+CHECKS = ROOT / "sql/03_checks.sql"
 OUT_DIR = ROOT / "data/processed"
 RAW = (ROOT / "data/raw/credit-charge-cards-quarterly.csv").as_posix()
 
@@ -37,13 +39,15 @@ def q(con, sql):
 
 
 def main():
-    os.chdir(ROOT)  # sql/01 references data/raw relatively
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
 
     raw_cells = q(con, f"SELECT count(*) FROM ({UNPIVOT})")[0][0]
     con.execute("CREATE OR REPLACE VIEW raw_long AS " + UNPIVOT)
-    con.execute(STAGING.read_text(encoding="utf-8"))
+    # The staging SQL references the raw file by a repo-relative path; substitute the
+    # absolute path so no step depends on the process working directory.
+    staging_sql = STAGING.read_text(encoding="utf-8").replace("data/raw/credit-charge-cards-quarterly.csv", RAW)
+    con.execute(staging_sql)
 
     quarters = q(con, "SELECT count(*) FROM quarterly")[0][0]
     staged_cells = q(con, """SELECT count(principal_cardholders) + count(supplementary_cardholders)

@@ -1,18 +1,11 @@
-# Decision memo — Singapore card write-offs, 2025 vs 2024
+# Decision memo — Singapore card write-offs through 2025
 
-**The answer: mostly the book grew — but the rate moved too.** Write-offs rose **+96.5 S$M to 519.7 S$M** in 2025 (up from 423.2). Splitting the change with the arithmetic below: **+63.9 S$M (~two-thirds) from growth in the rollover balance** and **+32.6 S$M from the charge-off rate** rising (5.44% → 5.83% recomputed annual). This is **not a repeat of 2020**: at the 2020 peak the book *shrank* and the rate alone drove the rise (+31.8 = volume **−41.2** + rate **+73.0**).
+**The answer, in one paragraph.** Card write-offs are at a series high (519.7 S$M in 2025) for two different reasons, in sequence: the **charge-off rate reset in 2024** (+1.42 pt on the annual average, ending six quarters parked at 5.9–6.0% published), and the **revolving balance kept growing in 2025** (+14.6% average) — while the card base did not (total cards −0.4%; balance per card S$1,089 → 1,252, +15%). The 2025 dollar change splits **volume +63.9 / rate +32.6 S$M** (midpoint weights; +96.5 total). The most recent read (H1 2026 vs H1 2025: +23.7 = +27.2 − 3.5) shows the rate term no longer contributing — the rise is now a balance story.
 
-**Scope.** All credit & charge-card issuers in Singapore, not one bank; quarterly aggregates (MAS via data.gov.sg), 2014 Q4 – 2026 Q2. Write-offs and balances are S$M per quarter; the charge-off rate is annualised — bad debts written off ÷ average rollover balance (the balance carried and charged interest).
+**What is known / what is not.** Known: system write-offs, balances, card counts and the rate, quarterly, 2014 Q4 – 2026 Q2; the split above; the 2020 contrast (a rate event on a *shrinking* book: +31.8 = −41.2 + 73.0). **Not in this file:** issuer, product, vintage, cure/recovery, borrower mix — and *why* the rate moved. One break is unexplained and flagged: principal cardholders fell 4.0% in a single quarter at 2025 Q3 and stayed down.
 
-**The arithmetic (stated, not implied):** write-offs = rate × average rollover balance in any period, so
+**What would change the view.** (1) A revised 2026 quarter — the newest data can be restated. (2) **Rollover/billings rolling over** (0.321 → 0.344 across 2024→25): if revolving keeps growing faster than spending, "volume" is stress accumulating, not expansion. (3) The rate leaving its 5.9% shelf.
 
-```text
-Δ write-offs = Δrollover × avg rate   (volume — the book grew)
-             + Δrate × avg rollover   (rate — lending quality changed)
-```
+**One caveat to carry.** "Volume" is not a clean bill of health — balances rise when spending grows *and* when repayment slows (distress not yet written off; write-offs lag). This split measures how much of the change is balance vs rate; it cannot separate the two kinds of balance growth.
 
-with midpoint averages, the two terms exhaust the change exactly (interaction ≡ 0 by construction; the base-weighted alternative shows a +4.4 S$M joint term — see [`sensitivity.md`](sensitivity.md)).
-
-**Comparison, so one year is not framed as a record:** the 2020 rate peak (7.1% published) was a rate event on a shrinking book; 2025 is a balance-growth event with a smaller rate drift. Across the trailing-4-quarter window (+79.3 = volume +58.4 + rate +20.9) and the freshest two-quarter read (+23.7 = +27.2 − 3.5), the direction holds: volume-led.
-
-**What a reader should NOT conclude.** This file cannot name a bank, a card product, or a borrower group; it cannot say *why* the rate moved (pricing, credit standards, relief unwinding — all out of scope); it cannot time defaults; and none of it is a forecast. Write-offs are an accounting flow — a quarter of timing decisions by issuers — not a distress clock. Numbers: [`../outputs/yearly_bridge.csv`](../outputs/yearly_bridge.csv); method: [`data_audit.md`](data_audit.md); robustness: [`sensitivity.md`](sensitivity.md).
+**Receipts.** [`../outputs/yearly_bridge.csv`](../outputs/yearly_bridge.csv) (the split) · [`../outputs/book_split.csv`](../outputs/book_split.csv) (cards × per-card) · [`sensitivity.md`](sensitivity.md) (windows/bases/weights) · [`data_audit.md`](data_audit.md) (definitions, reconciliations, the flagged break). Method: Δ write-offs = Δrollover × avg rate (volume) + Δrate × avg rollover (rate); with midpoint weights the two terms exhaust the change exactly — algebraic closure, not a finding.

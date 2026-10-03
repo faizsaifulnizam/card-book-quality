@@ -1,0 +1,44 @@
+{
+  "source": "data.gov.sg \u2014 api-open v1 public API (signed URL flow)",
+  "retrieved_at": "2026-10-03T17:38:17+00:00",
+  "files": {
+    "credit-charge-cards-quarterly.csv": {
+      "dataset_id": "d_5c8e5801c2a64e2e6b16608296ef3e02",
+      "dataset_url": "https://data.gov.sg/datasets/d_5c8e5801c2a64e2e6b16608296ef3e02/view",
+      "role": "primary",
+      "bytes": 2300,
+      "sha256": "df7f3a1a880ce3f558aa871344da12eb20db1361fee0ca8b5dd288ab2e141a2f",
+      "rows": 6,
+      "quarters": 47,
+      "quarter_min": "2014 Q4",
+      "quarter_max": "2026 Q2",
+      "series": [
+        "Principal Cardholders",
+        "Supplementary Cardholders",
+        "Total Card Billings",
+        "Rollover Balance",
+        "Bad Debts Written Off",
+        "Charge-Off Rates"
+      ]
+    },
+    "credit-charge-cards-annual.csv": {
+      "dataset_id": "d_b40deadbdc470e97b9e16de99c5e6ee2",
+      "dataset_url": "https://data.gov.sg/datasets/d_b40deadbdc470e97b9e16de99c5e6ee2/view",
+      "role": "cross-check",
+      "bytes": 666,
+      "sha256": "ca2dd74f836a8c2381ea8e3c2e83a232f7d12f8bc7a150b227ce5feabf9a7edc",
+      "rows": 6,
+      "years": 12,
+      "year_min": "2014",
+      "year_max": "2025",
+      "series": [
+        "Principal Cardholders",
+        "Supplementary Cardholders",
+        "Total Card Billings",
+        "Rollover Balance",
+        "Bad Debts Written Off",
+        "Charge-Off Rates"
+      ]
+    }
+  }
+}

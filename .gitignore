@@ -1,19 +1,27 @@
-# ---- data and models (raw is never committed) ----
+# ---- data and models ----
+# The raw MAS files are small and re-distributable (Singapore Open Data Licence, attributed
+# in the README): they are COMMITTED as vendored copies so a clone reproduces everything
+# offline and CI can run the full pipeline without network. They are never edited —
+# re-pull with `src/download.py --force`, then commit the new bytes + manifest.
 data/raw/*
+!data/raw/README.md
+!data/raw/pull_manifest.json
+!data/raw/dataset-metadata-annual.json
+!data/raw/dataset-metadata-quarterly.json
 data/interim/*
 data/processed/*
-!data/raw/README.md
-!**/.gitkeep
 models/*
 *.parquet
 *.xlsx
 *.pkl
 *.joblib
 
-# CSVs are ignored by default; published small outputs are exempted
+# CSVs are ignored by default; published small outputs and the vendored raw files are exempted
 *.csv
 !outputs/**/*.csv
 !outputs/**/*.xlsx
+!data/raw/credit-charge-cards-quarterly.csv
+!data/raw/credit-charge-cards-annual.csv
 
 # ---- python and notebooks ----
 .venv/

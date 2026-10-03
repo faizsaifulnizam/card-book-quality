@@ -1,26 +1,28 @@
-"""S2 analysis runner — annual metrics → rate-vs-volume bridge → sensitivity.
+"""Analysis runner — annual metrics → rate-vs-volume bridge → book (per-card) split → sensitivity.
 
-Run: python src/analysis.py   (from the repo root; reads data/processed/quarterly.parquet)
+Run: python src/analysis.py   (from anywhere; reads data/processed/quarterly.parquet)
 
 The bridge (the core): Δ write-offs = ΔR·r̄ (volume) + Δr·R̄ (rate), with midpoint
-weights (r̄, R̄ = averages of the two periods). With midpoint weights the two terms
-exhaust the change exactly — the interaction is absorbed symmetrically and the
-reported interaction term is 0 by construction. The base-weighted alternative
-(volume = ΔR·r0, rate = Δr·R0, interaction = ΔR·Δr) is shown in the sensitivity
-table so the weighting choice is transparent.
+weights (r̄, R̄ = averages of the two periods). Midpoint weights make the two terms
+exhaust the change exactly — that is ALGEBRAIC CLOSURE, not an empirical finding:
+the interaction is split symmetrically and reports as 0 by construction. The
+base-weighted alternative (volume = ΔR·r0, rate = Δr·R0, interaction = ΔR·Δr)
+surfaces the joint term (+4.4 S$M) in the sensitivity table. The empirical
+receipts live elsewhere: the raw-CSV recompute, the published-rate
+reconciliation, and the flow/stock reconciliation against the published annual file.
 
 Receipts printed:
   1. annual table (complete years only)
-  2. hand-checks: 3 years recomputed from the RAW CSV with stdlib only (independent path)
-  3. identity asserts per bridge row + published-vs-recomputed rate tolerance
-  4. headline (latest complete year) + peak-year numbers; coverage guard
-  5. sensitivity table (trailing window · same-half-year · published basis · base weights)
+  2. hand-checks: EVERY complete year recomputed from the RAW CSV with stdlib only
+  3. closure asserts per bridge row + published-vs-recomputed rate tolerance (0.05 pt)
+  4. flow/stock reconciliation: flows (Σ quarters) vs annual ≤ 0.1; stocks == Q4 exactly
+  5. headline + rate path + book split (Δrollover = cards effect + balance-per-card effect)
+  6. sensitivity (window · basis · weighting; joint term and rounding residual kept apart)
 
 Validation runs BEFORE any output file is written; a failing run leaves existing
-outputs untouched. Writes: outputs/yearly_bridge.csv · outputs/sensitivity.csv
+outputs untouched. Writes: outputs/yearly_bridge.csv · outputs/book_split.csv · outputs/sensitivity.csv
 """
 import csv
-import os
 import sys
 from pathlib import Path
 
@@ -32,8 +34,7 @@ RAWQ = ROOT / "data/raw/credit-charge-cards-quarterly.csv"
 RAWA = ROOT / "data/raw/credit-charge-cards-annual.csv"
 OUT = ROOT / "outputs"
 
-RATE_TOL = 0.06    # pt — recomputed annual rate vs published annual rate (audit: <= 0.05)
-HAND_CHECK_YEARS = (2019, 2020, 2025)
+RATE_TOL = 0.05    # pt — recomputed annual rate vs published annual rate (max observed 0.049)
 
 
 def q(con, sql):
@@ -41,10 +42,9 @@ def q(con, sql):
 
 
 def run_script(con, path):
-    text = "\n".join(l.split("--", 1)[0] for l in Path(path).read_text(encoding="utf-8").splitlines())
-    for stmt in text.split(";"):
-        if stmt.strip():
-            con.execute(stmt)
+    """Execute a .sql file as-is: DuckDB parses comments and multi-statement files
+    natively — no comment stripping, no manual statement splitting."""
+    con.execute(Path(path).read_text(encoding="utf-8"))
 
 
 def load_raw():
@@ -94,7 +94,6 @@ def fmt_row(label, d):
 
 
 def main():
-    os.chdir(ROOT)
     OUT.mkdir(exist_ok=True)
     con = duckdb.connect()
     con.execute(f"CREATE OR REPLACE VIEW quarterly AS SELECT * FROM read_parquet('{PARQUET}')")
@@ -104,6 +103,9 @@ def main():
     run_script(con, ROOT / "sql/02_metrics.sql")
     raw_q, raw_a = load_raw()  # independent stdlib path; the published ANNUAL rate is the comparator
     ann_rate = {int(k): float(v) for k, v in raw_a["Charge-Off Rates"].items() if v != "na"}
+    ann_num = {s: {int(k): float(v) for k, v in raw_a[s].items() if v != "na"}
+               for s in ("Total Card Billings", "Bad Debts Written Off",
+                         "Rollover Balance", "Principal Cardholders")}
     years = q(con, "SELECT year, quarters, write_offs_sgd_m, avg_rollover_sgd_m, rate_pct_recomputed, rate_pct_avg_quarterly FROM annual ORDER BY year")
     total_years = q(con, "SELECT count(*) FROM (SELECT DISTINCT year(quarter) FROM quarterly)")[0][0]
     print(f"complete years: {len(years)} of {total_years} calendar years present (partial years excluded)")
@@ -113,8 +115,8 @@ def main():
               f"· rate {rc:.3f}% (pub annual {f'{puba:.1f}' if puba is not None else 'n/a'}% · avg of qtr {pubq:.2f}%)")
 
     print()
-    print("== hand-checks (independent recompute from the RAW CSV, stdlib only) ==")
-    for y in HAND_CHECK_YEARS:
+    print("== hand-checks (independent recompute from the RAW CSV, stdlib only; every complete year) ==")
+    for y in [int(y_[0]) for y_ in years]:
         w = sum(raw_q["Bad Debts Written Off"][f"{y}{k}Q"] for k in (1, 2, 3, 4))
         r = sum(raw_q["Rollover Balance"][f"{y}{k}Q"] for k in (1, 2, 3, 4)) / 4
         rows = q(con, f"SELECT write_offs_sgd_m, avg_rollover_sgd_m, rate_pct_recomputed FROM annual WHERE year = {y}")[0]
@@ -143,9 +145,31 @@ def main():
           f"contiguous; partial-year rows at edges only ({partial})")
     failed |= not (ok_contig and ok_partial)
 
-    # ---- the bridge, year over year ----
+    # flow/stock reconciliation vs the published annual file (rules in docs/data_audit.md):
+    # flows (billings, write-offs) are yearly SUMS — Σ quarters must match within 0.1;
+    # stocks (rollover, principal cardholders) are YEAR-END — must equal Q4 exactly.
+    qsum = {int(r[0]): (float(r[1]), float(r[2]), float(r[3]), float(r[4])) for r in q(con, """
+        SELECT year(quarter), sum(billings_sgd_m), sum(write_offs_sgd_m),
+               max(CASE WHEN quarter = make_date(year(quarter), 10, 1) THEN rollover_sgd_m END),
+               max(CASE WHEN quarter = make_date(year(quarter), 10, 1) THEN principal_cardholders END)
+        FROM quarterly GROUP BY 1 HAVING count(*) = 4 ORDER BY 1""")}
+    dflow, dstocks = 0.0, 0.0
+    for y in complete:
+        b_q, w_q, r_q4, p_q4 = qsum[y]
+        dflow = max(dflow, abs(w_q - ann_num["Bad Debts Written Off"][y]),
+                    abs(b_q - ann_num["Total Card Billings"][y]))
+        dstocks = max(dstocks, abs(r_q4 - ann_num["Rollover Balance"][y]),
+                      abs(p_q4 - ann_num["Principal Cardholders"][y]))
+    ok_flow, ok_stock = round(dflow, 9) <= 0.1, dstocks == 0
+    print(f"   [{'PASS' if ok_flow else 'FAIL'}] flows vs published annual: max |Δ| {dflow:.2f} S$M over {len(complete)} years "
+          f"(write-offs + billings — quarterly sums vs annual; tolerance 0.1)")
+    print(f"   [{'PASS' if ok_stock else 'FAIL'}] stocks == Q4 exactly: rollover & principal cardholders vs published annual "
+          f"(max |Δ| {dstocks:.0f} — year-end values; the bridge's balance is the average of the four quarter-ends, not this)")
+    failed |= not (ok_flow and ok_stock)
+
+    # ---- the bridge, year over year (algebraic closure: volume + rate ≡ Δ by construction) ----
     print()
-    print("== the bridge (yearly, midpoint weights) ==")
+    print("== the bridge (yearly, midpoint weights — closure, not an empirical finding) ==")
     bridges = []
     for y in complete[1:]:
         old = window_stats(con, year_quarters(y - 1))
@@ -155,7 +179,7 @@ def main():
         ok = abs(b["volume"] + b["rate"] + b["inter"] - b["dW"]) <= eps and abs(b["inter"]) <= eps
         failed |= not ok
         bridges.append((y, old, new, b, ok))
-        print(fmt_row(str(y), b) + ("" if ok else "   [FAIL identity]"))
+        print(fmt_row(str(y), b) + ("" if ok else "   [FAIL closure]"))
 
     latest_year = complete[-1]
     yrow = {int(r[0]): r for r in years}
@@ -163,6 +187,10 @@ def main():
     w_old, r_old = yrow[latest_year - 1][2], yrow[latest_year - 1][3]
     print(f"   headline: {latest_year} vs {latest_year - 1} — write-offs {w_old:,.1f} → {w_new:,.1f} S$M "
           f"(+{w_new - w_old:,.1f}); rate {yrow[latest_year - 1][4]:.2f}% → {yrow[latest_year][4]:.2f}%")
+    step1 = yrow[latest_year - 1][4] - yrow[latest_year - 2][4]
+    step2 = yrow[latest_year][4] - yrow[latest_year - 1][4]
+    print(f"   rate path: {yrow[latest_year - 2][4]:.2f}% ({latest_year - 2}) → {yrow[latest_year - 1][4]:.2f}% "
+          f"(+{step1:.2f} pt) → {yrow[latest_year][4]:.2f}% (+{step2:.2f} pt) — the step-up landed in {latest_year - 1}")
 
     peak_year = max(complete, key=lambda y: ann_rate.get(y, yrow[y][4]))
     print(f"   peak year (max published ANNUAL rate, from data): {peak_year} "
@@ -194,9 +222,43 @@ def main():
     # (written after all validation below — see the single write gate)
     print(f"yearly bridge rows prepared: {len(rows_out)}")
 
+    # ---- the book, per card: Δrollover split into cards effect × balance-per-card effect ----
+    print()
+    print("== the book, per card (Δrollover = cards effect + balance-per-card effect; midpoint) ==")
+    cards = {int(r[0]): r for r in q(con, """
+        SELECT year(quarter) AS y, avg(principal_cardholders), avg(supplementary_cardholders),
+               avg(rollover_sgd_m), avg(billings_sgd_m), sum(write_offs_sgd_m)
+        FROM quarterly GROUP BY 1 HAVING count(*) = 4 ORDER BY 1""")}
+    book_rows = []
+    for y in complete[1:]:
+        y0 = y - 1
+        p0, s0, r_0, b_0 = (float(cards[y0][i]) for i in range(1, 5))
+        p1, s1, r_1, b_1, w_1 = (float(cards[y][i]) for i in range(1, 6))
+        c0, c1 = p0 + s0, p1 + s1
+        pc0, pc1 = r_0 * 1e6 / c0, r_1 * 1e6 / c1
+        d_r = r_1 - r_0
+        cards_eff = (c1 - c0) * (pc0 + pc1) / 2 / 1e6
+        bpc_eff = (pc1 - pc0) * (c0 + c1) / 2 / 1e6
+        ok = abs(cards_eff + bpc_eff - d_r) <= 1e-6 * max(1.0, abs(d_r))
+        failed |= not ok
+        book_rows.append({
+            "year": y, "previous_year": y0,
+            "avg_principal_cards": int(round(p1)),
+            "avg_supplementary_cards": int(round(s1)),
+            "avg_total_cards": int(round(c1)),
+            "rollover_per_card_sgd": int(round(pc1)),
+            "write_offs_per_principal_card_sgd": int(round(w_1 * 1e6 / p1)),
+            "rollover_to_billings": round(r_1 / b_1, 3),
+            "delta_rollover_sgd_m": round(d_r, 2),
+            "cards_effect_sgd_m": round(cards_eff, 2),
+            "balance_per_card_effect_sgd_m": round(bpc_eff, 2)})
+        print(f"   {y} vs {y0}: rollover {d_r:+8.1f} = cards {cards_eff:+7.1f} + balance/card {bpc_eff:+7.1f} S$M "
+              f"· S${pc1:,.0f}/card · write-offs S${w_1 * 1e6 / p1:,.0f}/principal card "
+              f"· rollover/billings {r_1 / b_1:.3f}" + ("" if ok else "  [FAIL closure]"))
+
     # ---- sensitivity ----
     print()
-    print("== sensitivity (C3): window · basis · weighting ==")
+    print("== sensitivity: window · basis · weighting (joint term vs rounding residual kept apart) ==")
     q_sorted = [r[0].isoformat() for r in q(con, "SELECT quarter FROM quarterly ORDER BY quarter")]
     last4, prev4 = q_sorted[-4:], q_sorted[-8:-4]
     last2, prev2 = q_sorted[-2:], q_sorted[-6:-4]
@@ -212,7 +274,8 @@ def main():
                 "delta_sgd_m": round(b["dW"], 2),
                 "volume_sgd_m": round(b["volume"], 2),
                 "rate_sgd_m": round(b["rate"], 2),
-                "interaction_sgd_m": round(b["inter"], 2),
+                "joint_sgd_m": round(b["inter"], 2),
+                "residual_sgd_m": round(b["dW"] - b["volume"] - b["rate"] - b["inter"], 2),
                 "rate_old_pct": round(old["rate_pct"], 2),
                 "rate_new_pct": round(new["rate_pct"], 2)}, b
 
@@ -242,7 +305,8 @@ def main():
         "write_offs_old_sgd_m": round(old["w"], 2), "write_offs_new_sgd_m": round(new["w"], 2),
         "delta_sgd_m": round(new["w"] - old["w"], 2),
         "volume_sgd_m": round(vol_p, 2), "rate_sgd_m": round(rate_p, 2),
-        "interaction_sgd_m": round((new["w"] - old["w"]) - vol_p - rate_p, 2),
+        "joint_sgd_m": "",  # published rates don't define the joint term — the closure gap below is a residual
+        "residual_sgd_m": round((new["w"] - old["w"]) - vol_p - rate_p, 2),
         "rate_old_pct": ann_rate[latest_year - 1], "rate_new_pct": ann_rate[latest_year],
     })
 
@@ -256,19 +320,22 @@ def main():
         "write_offs_old_sgd_m": round(old["w"], 2), "write_offs_new_sgd_m": round(new["w"], 2),
         "delta_sgd_m": round(b["dW"], 2),
         "volume_sgd_m": round(b["volume_b"], 2), "rate_sgd_m": round(b["rate_b"], 2),
-        "interaction_sgd_m": round(b["inter_b"], 2),
+        "joint_sgd_m": round(b["inter_b"], 2),  # the true joint (interaction) term, surfaced by base weights
+        "residual_sgd_m": round(b["dW"] - b["volume_b"] - b["rate_b"] - b["inter_b"], 2),
         "rate_old_pct": round(old["rate_pct"], 2), "rate_new_pct": round(new["rate_pct"], 2),
     })
     for r_ in rows_s:
+        jt = r_["joint_sgd_m"]
+        jt_s = f"{jt:+7.2f}" if isinstance(jt, (int, float)) else "     — "
         print(f"   {r_['variant']:<44} Δ {r_['delta_sgd_m']:+7.2f} = vol {r_['volume_sgd_m']:+7.2f} "
-              f"+ rate {r_['rate_sgd_m']:+7.2f} + inter {r_['interaction_sgd_m']:+.2f}")
+              f"+ rate {r_['rate_sgd_m']:+7.2f} + joint {jt_s} + resid {float(r_['residual_sgd_m']):+.2f}")
 
     if failed:
         print()
         print("validation failed — output files NOT written (existing outputs left untouched)")
         sys.exit(1)
 
-    # ---- all validation passed: write both outputs ----
+    # ---- all validation passed: write the outputs (bridge · book split · sensitivity) ----
     path = OUT / "yearly_bridge.csv"
     with path.open("w", newline="", encoding="utf-8") as f:
         wcsv = csv.DictWriter(f, fieldnames=cols)
@@ -276,7 +343,16 @@ def main():
         wcsv.writerows(rows_out)
     print("wrote:", path.as_posix(), f"({path.stat().st_size} bytes, {len(rows_out)} rows)")
 
-    cols_s = list(rows_s[0].keys())
+    bs = OUT / "book_split.csv"
+    with bs.open("w", newline="", encoding="utf-8") as f:
+        wcsv = csv.DictWriter(f, fieldnames=list(book_rows[0].keys()))
+        wcsv.writeheader()
+        wcsv.writerows(book_rows)
+    print("wrote:", bs.as_posix(), f"({bs.stat().st_size} bytes, {len(book_rows)} rows)")
+
+    cols_s = ["variant", "window_old", "window_new", "write_offs_old_sgd_m", "write_offs_new_sgd_m",
+              "delta_sgd_m", "volume_sgd_m", "rate_sgd_m", "joint_sgd_m", "residual_sgd_m",
+              "rate_old_pct", "rate_new_pct"]
     spath = OUT / "sensitivity.csv"
     with spath.open("w", newline="", encoding="utf-8") as f:
         wcsv = csv.DictWriter(f, fieldnames=cols_s)

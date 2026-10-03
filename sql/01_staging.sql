@@ -1,5 +1,7 @@
 -- 01_staging.sql — raw wide CSV -> per-quarter table `quarterly`.
--- Reads:  data/raw/credit-charge-cards-quarterly.csv (never modified)
+-- Reads:  data/raw/credit-charge-cards-quarterly.csv (never modified; the relative
+--         path below is substituted with an absolute path by src/build_dataset.py,
+--         so this file's meaning never depends on the process working directory)
 -- Writes: table `quarterly`; parquet copy handled by src/build_dataset.py.
 -- The raw file is wide: one row per series, one column per quarter label
 -- ('20262Q' = 2026 Q2). Unpivot to long, parse the quarter, TRY_CAST values,

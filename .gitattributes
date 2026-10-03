@@ -1,0 +1,6 @@
+# Vendored raw data + generated artifacts: keep exact bytes on every platform, so the
+# sha256 receipts and CI re-runs compare like-for-like (no autocrlf rewriting either side).
+data/raw/*.csv -text
+data/raw/*.json -text
+outputs/*.csv -text
+outputs/*.xlsx -text
