@@ -9,7 +9,7 @@ the published annual file under an explicit dictionary:
   - STOCKS (Rollover Balance, cardholders) are YEAR-END values —
     the annual figure equals Q4, NOT the average the bridge uses.
 
-Also prints the seasonal index and the flags carried into the write-up.
+Also prints pooled quarter-of-year means and the flags carried into the write-up.
 Output feeds docs/data_audit.md.
 
 Run (any cwd):  python src/audit.py
@@ -99,13 +99,12 @@ def main():
         w, r = qvals("Bad Debts Written Off", y), qvals("Rollover Balance", y)
         print(f"  {y}: write-offs Σ {sum(w):,.1f} S$M · avg rollover {sum(r)/4:,.1f} S$M · rate {sum(w)/(sum(r)/4)*100:.3f}%")
 
-    print("\n== seasonality: published rate by quarter-of-year (complete years 2015–2025) ==")
+    print("\n== pooled quarter means: published rate by quarter-of-year (complete years 2015–2025) ==")
     for qq in (1, 2, 3, 4):
         vs = [float(qmap["Charge-Off Rates"][c]) for c in qs if c.endswith(f"{qq}Q") and 2015 <= int(c[:4]) <= 2025]
         print(f"  Q{qq}: mean {sum(vs) / len(vs):.2f}%  ({len(vs)} years)")
-    print("  typical range ≈0.3 pt — annual windows absorb THIS. 2024's within-year move (5.0 → 6.5) is not")
-    print("  this pattern — it's a level shift plus a spike. The annual window is used because the rate")
-    print("  changed LEVEL (2024 step-up), not because seasonality is large.")
+    print("  Pooled quarter means mix seasonal position, changing annual levels and unusual years;")
+    print("  like-position windows are not proof of seasonal adjustment.")
     recent = [c for c in qs if qidx(c) >= qidx("20251Q")]
     print("  recent quarters: " + " · ".join(f"{c} {qmap['Charge-Off Rates'][c]}%" for c in recent))
 

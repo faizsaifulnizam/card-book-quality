@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="card-book-quality — did card write-offs rise because the book grew or because the charge-off rate worsened">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="card-book-quality — an arithmetic split of card write-offs into balance and loss-ratio contributions">
   <rect width="1280" height="320" fill="#FBFBF9"/>
-  <title>card-book-quality — did card write-offs rise because the book grew, or because the charge-off rate worsened</title>
+  <title>card-book-quality — an arithmetic split of card write-offs into balance and loss-ratio contributions</title>
   <text x="72" y="118" font-family="Georgia, 'Source Serif 4', serif" font-size="58" fill="#14293D">card-book-quality</text>
   <rect x="72" y="146" width="430" height="4" fill="#C0552B"/>
   <text x="72" y="196" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">In 2025, credit-card write-offs rose S$96.5M — did</text>
-  <text x="72" y="222" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">the book grow, or did the charge-off rate worsen? A</text>
-  <text x="72" y="248" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">same-money split: <tspan fill="#22607B">●</tspan> volume +63.9 vs <tspan fill="#C0552B">●</tspan> rate +32.6,</text>
+  <text x="72" y="222" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">balances grow, or did the loss ratio increase? A</text>
+  <text x="72" y="248" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">same-money split: <tspan fill="#22607B">●</tspan> balance +63.9 vs <tspan fill="#C0552B">●</tspan> ratio +32.6,</text>
   <text x="72" y="274" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" fill="#5C6B79">all issuers in Singapore, not one bank.</text>
-  <text x="72" y="306" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#8B98A5">Write-offs S$M · 2024 423.2 → 2025 519.7 · volume = the book grew · rate = lending quality</text>
+  <text x="72" y="306" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#8B98A5">Write-offs S$M · balance = rollover · ratio = loss proxy</text>
   <line x1="854" y1="91.1" x2="880" y2="91.1" stroke="#E7E3DC" stroke-width="3" stroke-dasharray="6 5"/>
   <line x1="934" y1="66.5" x2="960" y2="66.5" stroke="#E7E3DC" stroke-width="3" stroke-dasharray="6 5"/>
   <line x1="1014" y1="54" x2="1040" y2="54" stroke="#E7E3DC" stroke-width="3" stroke-dasharray="6 5"/>
@@ -20,8 +20,8 @@
   <text x="987" y="46" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#C0552B">+32.6</text>
   <text x="1067" y="46" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="15" fill="#5C6B79">519.7</text>
   <text x="827" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">2024</text>
-  <text x="907" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">volume</text>
-  <text x="987" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">rate</text>
+  <text x="907" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">balance</text>
+  <text x="987" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">ratio</text>
   <text x="1067" y="276" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="13" fill="#8B98A5">2025</text>
   <text x="1208" y="306" text-anchor="end" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#C0552B">Data: MAS via data.gov.sg · Singapore Open Data Licence</text>
 </svg>

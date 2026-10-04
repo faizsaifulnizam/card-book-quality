@@ -29,4 +29,11 @@ UNION ALL SELECT 'money fields positive',
        count(*) FROM quarterly
        WHERE billings_sgd_m <= 0 OR rollover_sgd_m <= 0 OR write_offs_sgd_m <= 0
 UNION ALL SELECT 'published rate in 0–50%',
-       count(*) FROM quarterly WHERE charge_off_rate_pct < 0 OR charge_off_rate_pct > 50;
+       count(*) FROM quarterly WHERE charge_off_rate_pct < 0 OR charge_off_rate_pct > 50
+UNION ALL SELECT 'numeric fields finite', count(*) FROM quarterly
+WHERE NOT isfinite(principal_cardholders)
+   OR NOT isfinite(supplementary_cardholders)
+   OR NOT isfinite(billings_sgd_m)
+   OR NOT isfinite(rollover_sgd_m)
+   OR NOT isfinite(write_offs_sgd_m)
+   OR NOT isfinite(charge_off_rate_pct);
