@@ -60,7 +60,7 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:v
 <div class="banner">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="img/banner-dark.svg">
-<img src="img/banner.svg" alt="card-book-quality — did card write-offs rise because the book grew or because the charge-off rate worsened">
+<img src="img/banner.svg" alt="card-book-quality — an arithmetic split of write-offs into balance and loss-ratio contributions">
 </picture>
 </div>
 
@@ -74,7 +74,7 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:v
   <div class="stat"><div class="n">+63.9 / +32.6</div><div class="l">the split in S$M: balance (higher aggregate balance per reported card) / recomputed ratio — midpoint arithmetic, not causal attribution</div></div>
   <div class="stat"><div class="n">cards −32 or +30</div><div class="l">annual-average balance split: total cards −32 / per-card +1,167 S$M; principal-only +30 / per-card +1,105. Denominator-sensitive proxies, not customer counts</div></div>
   <div class="stat"><div class="n">5.44% → 5.83%</div><div class="l">recomputed annual rate (published 5.4 → 5.8) — an average that lags: the step-up landed in 2024; still below 2020's 7.08%</div></div>
-  <div class="stat"><div class="n">±0.05 pt</div><div class="l">recomputed vs published annual rate, 11/11 years — the data-quality receipt; flows &amp; stocks both reconcile</div></div>
+  <div class="stat"><div class="n">±0.05 pt</div><div class="l">recomputed vs published annual rate, 11/11 years — the data-quality receipt; flows, rollover &amp; principal-card stocks reconcile</div></div>
   <div class="stat"><div class="n">−4.0%</div><div class="l">principal cardholders, 2025 Q3 in one quarter (the largest move in the file) — flagged, not explained</div></div>
 </div>
 
@@ -90,7 +90,7 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:v
 <div class="grid2">
   <figure class="fig">
   <a href="img/f2_bridge.png" aria-label="View full-size bridge chart"><picture><source media="(prefers-color-scheme: dark)" srcset="img/f2_bridge-dark.png"><img src="img/f2_bridge.png" alt="Waterfall: 2025 vs 2024, 2024 vs 2023 and 2020 vs 2019, split into balance and proxy-ratio terms"></picture></a>
-  <figcaption>2024 vs 2023: +152.8 = balance +50.0 + ratio +102.8 S$M. Across 2022–2025 the ratio term is the larger cumulative contribution; the smaller 2025 proxy-ratio change is a separate comparison. <a href="img/f2_bridge.png">View full-size chart</a> · <a href="img/f2_bridge-dark.png">dark version</a>.</figcaption>
+  <figcaption>2024 vs 2023: +152.8 = balance +50.0 + ratio +102.8 S$M. Comparing the 2022 and 2025 endpoints, the ratio term is larger (an endpoint split, not summed yearly contributions); the smaller 2025 proxy-ratio change is a separate comparison. <a href="img/f2_bridge.png">View full-size chart</a> · <a href="img/f2_bridge-dark.png">dark version</a>.</figcaption>
   </figure>
   <figure class="fig">
   <a href="img/f3_contributions.png" aria-label="View full-size annual-contributions chart"><picture><source media="(prefers-color-scheme: dark)" srcset="img/f3_contributions-dark.png"><img src="img/f3_contributions.png" alt="Positive and negative balance and ratio contributions to yearly write-off changes, 2016–2025"></picture></a>
@@ -117,7 +117,10 @@ footer{border-top:1px solid var(--rule);margin-top:60px;padding-top:18px;color:v
 <h2>Reproduce</h2>
 <pre><code>git clone https://github.com/faizsaifulnizam/card-book-quality &amp;&amp; cd card-book-quality
 uv venv .venv --python 3.12 --seed   # seed pip; or: python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
+source .venv/bin/activate            # Linux/macOS Bash
+# Windows Git Bash: source .venv/Scripts/activate
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# Windows cmd.exe: .venv\Scripts\activate.bat
 python -m pip install --require-hashes -r requirements.lock
 
 python src/run_all.py        # vendored inputs: no data-fetch network required</code></pre>

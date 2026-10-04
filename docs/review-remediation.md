@@ -1,5 +1,30 @@
 # External-review disposition
 
+## Hiring/theme follow-up — 2026-10-04 (local only)
+
+**Baseline:** public main `d3b7a6ce100cd3d1932e4099744b768b15009018`. This follow-up addresses the subsequent twelve-finding hiring-artifact review; the historical second-review receipt below remains a record of its own pass.
+
+| Finding | Repair / verification |
+|---|---|
+| Banner equates rate with lending quality | Both SVG themes and site copies use balance/ratio proxy language; redundant footer values removed so explanatory/source text stays separated. |
+| GitHub F1 stays light | Standalone multiline picture; explicit light/dark full-size links retained. GitHub Markdown API preserves source/image nesting; browser selects the correct F1 asset in both schemes. |
+| Annual duplicate-year bypass | Duplicate annual-year headers rejected before refresh publication; real malformed acquisition preserves raw files and manifest. |
+| Partial standalone analysis publication | All three CSVs staged, then published with the existing rollback helper; staging and third-install failure preserve the full prior generation. |
+| Apostrophe-containing checkout paths | Escaped SQL literals while retaining actual filesystem paths; real apostrophe checkout runs dataset, analysis, figures and workbook successfully. |
+| Standalone non-finite dataset values | Finite predicate across all six staged fields; 18 non-finite source mutations rejected before replacing valid parquet (some fail earlier during parsing). |
+| Executable seasonality/monthly-basis overclaims | Executable audit describes pooled means without seasonal-adjustment claims; analysis leaves publisher averaging-basis differences unverified. |
+| Ambiguous Windows activation | README/site list Git Bash, PowerShell and cmd activation explicitly. |
+| Data is text, not badge | Actual linked badge image; GitHub-proxied image loads in browser. |
+| Stock assertion scope overstated | README/audit/site explicitly scope asserted stock cross-checks to rollover and principal cards; supplementary checks are not promised. |
+| Half-clipped first F1 bars | First-bar width is fully visible in both themes (fraction 1.0, previously 0.5); both F1 PNGs and site copies regenerated. |
+| About website omitted | Website set to the live report and read back through GitHub API; the only remote change in this pass. |
+
+The README/site also clarify that 2022→2025 is a direct endpoint decomposition, not summed annual contributions. Presentation contracts were observed RED before repair and **3 tests GREEN** after. Real browser checks on GitHub-rendered local Markdown and local Pages verify theme selection, loaded picture images and Data badge, 390 px mobile no overflow, and non-overlapping SVG footers. These are **not** a newly deployed GitHub README/Pages check. Final parent replay passes **48 tests with no skips**, including real LibreOffice recalculation, the complete canonical pipeline and every README Python stage, independent bridge checks, **7/7 smoke checks**, and **20 unchanged repeat artifact hashes**. Raw CSVs/manifest, three output CSVs and workbook are byte-identical to HEAD. All report/site PNG pairs match; only F1 figures changed. Both F1 themes visually inspected with no confirmed clipping/overlap. Git whitespace check passes. Publication is single-writer and exception-rollback, not crash/power-loss atomic. No installs or new dependencies.
+
+Code changes, commit/push, merge, release and Pages deployment are separate steps. No code publishing is claimed in this local pass; existing financial inputs and headline are unchanged.
+
+## Previous second-review disposition
+
 **Baseline:** main `c1b852b`; supplied reviews analysed historical `7541282`. Fixed raw snapshot: 2026-10-03. This report distinguishes calculation/wording defects from usability improvements and unsupported conclusions. A review's assertion is not itself a reproduced test result.
 
 **Reading this report:** the tables retain the narrative worker's original handoff classifications. The **integrated verification receipt below supersedes “delegated/pending” statuses** where completed checks are listed. Working-tree repair is separate from remote release/Pages publication; neither was changed in this pass.

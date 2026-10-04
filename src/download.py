@@ -187,6 +187,8 @@ def validate_annual(data):
     if not header or header[0] != "DataSeries":
         return None, ["first header column is not 'DataSeries'"]
     ycols = [c for c in header[1:] if YCOL.match(c)]
+    if len(ycols) != len(set(ycols)):
+        problems.append("duplicate annual-year columns")
     if len(ycols) != len(header) - 1:
         bad = [c for c in header[1:] if not YCOL.match(c)]
         problems.append(f"non-year header columns: {bad[:5]}")

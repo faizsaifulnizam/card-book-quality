@@ -46,6 +46,7 @@ from src.analysis import bridge as split_bridge  # noqa: E402
 from src.analysis import book_split, run_script, window_stats, year_quarters  # noqa: E402
 
 PARQUET = (ROOT / "data/processed/quarterly.parquet").as_posix()
+PARQUET_SQL = PARQUET.replace("'", "''")
 FIGDIR = ROOT / "reports/figures"
 DOCS_IMG = ROOT / "docs/img"
 ANNUAL_RAW = ROOT / "data/raw/credit-charge-cards-annual.csv"
@@ -242,7 +243,8 @@ def fig1_timeline(con, canvas_in=9.0):
     ax3.annotate(f"{rate[-1]:.1f}%", (xs[-1], rate[-1]), xytext=(7, -3), textcoords="offset points",
                  fontsize=8, color=T["ink"])
 
-    axs[3].set_xlim(xs[0], mdates.date2num(xs[-1]) + 250)
+    axs[3].set_xlim(mdates.date2num(xs[0]) - bw / 2,
+                    mdates.date2num(xs[-1]) + 250)
     axs[3].set_xticks([date(y, 1, 1) for y in range(2016, 2027, 2)])
     axs[3].xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     fig.subplots_adjust(left=0.105, right=0.90, top=0.935, bottom=0.075, hspace=0.34)
@@ -471,7 +473,7 @@ def main():
     FIGDIR.mkdir(parents=True, exist_ok=True)
     DOCS_IMG.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
-    con.execute(f"CREATE OR REPLACE VIEW quarterly AS SELECT * FROM read_parquet('{PARQUET}')")
+    con.execute(f"CREATE OR REPLACE VIEW quarterly AS SELECT * FROM read_parquet('{PARQUET_SQL}')")
     run_script(con, ROOT / "sql/02_metrics.sql")
     for palette in (LIGHT, DARK):
         use_palette(palette)

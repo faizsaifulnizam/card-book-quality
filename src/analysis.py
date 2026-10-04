@@ -19,17 +19,22 @@ Receipts printed:
   5. headline + rate path + book split (Δrollover = cards effect + balance-per-card effect)
   6. sensitivity (window · basis · weighting; joint term and rounding residual kept apart)
 
-Validation runs BEFORE any output file is written; a failing run leaves existing
-outputs untouched. Writes: outputs/yearly_bridge.csv · outputs/book_split.csv · outputs/sensitivity.csv
+Validation precedes CSV staging; publication rolls back on ordinary exceptions.
+Not crash-atomic; requires one writer (see download.publish_paths).
+Writes: outputs/yearly_bridge.csv · outputs/book_split.csv · outputs/sensitivity.csv
 """
 import csv
 import sys
+import tempfile
 from pathlib import Path
 
 import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from src.download import publish_paths  # noqa: E402
 PARQUET = (ROOT / "data/processed/quarterly.parquet").as_posix()
+PARQUET_SQL = PARQUET.replace("'", "''")
 RAWQ = ROOT / "data/raw/credit-charge-cards-quarterly.csv"
 RAWA = ROOT / "data/raw/credit-charge-cards-annual.csv"
 OUT = ROOT / "outputs"
@@ -157,7 +162,7 @@ def book_split(con):
 def main():
     OUT.mkdir(exist_ok=True)
     con = duckdb.connect()
-    con.execute(f"CREATE OR REPLACE VIEW quarterly AS SELECT * FROM read_parquet('{PARQUET}')")
+    con.execute(f"CREATE OR REPLACE VIEW quarterly AS SELECT * FROM read_parquet('{PARQUET_SQL}')")
     failed = False
 
     print("== annual metrics (sql/02) ==")
@@ -196,7 +201,7 @@ def main():
     failed |= not ok_tol
     max_dq = max(abs(y[4] - y[5]) for y in years)
     print(f"   (context, not a check: vs the average of the four published quarterly rates the max |Δ| is "
-          f"{max_dq:.3f} pt — quarterly rates are rounded and computed on monthly balances; the annual figure is the comparator)")
+          f"{max_dq:.3f} pt — published quarterly rates are rounded; publisher averaging-basis differences are not independently verified here; the annual figure is the comparator)")
 
     complete = [int(y[0]) for y in years]
     ok_contig = complete == list(range(complete[0], complete[-1] + 1))
@@ -399,30 +404,26 @@ def main():
         print("validation failed — output files NOT written (existing outputs left untouched)")
         sys.exit(1)
 
-    # ---- all validation passed: write the outputs (bridge · book split · sensitivity) ----
-    path = OUT / "yearly_bridge.csv"
-    with path.open("w", newline="", encoding="utf-8") as f:
-        wcsv = csv.DictWriter(f, fieldnames=cols)
-        wcsv.writeheader()
-        wcsv.writerows(rows_out)
-    print("wrote:", path.as_posix(), f"({path.stat().st_size} bytes, {len(rows_out)} rows)")
-
-    bs = OUT / "book_split.csv"
-    with bs.open("w", newline="", encoding="utf-8") as f:
-        wcsv = csv.DictWriter(f, fieldnames=list(book_rows[0].keys()))
-        wcsv.writeheader()
-        wcsv.writerows(book_rows)
-    print("wrote:", bs.as_posix(), f"({bs.stat().st_size} bytes, {len(book_rows)} rows)")
-
+    # ---- all validation passed: stage the complete CSV set, then publish with rollback ----
     cols_s = ["variant", "window_old", "window_new", "write_offs_old_sgd_m", "write_offs_new_sgd_m",
               "delta_sgd_m", "volume_sgd_m", "rate_sgd_m", "joint_sgd_m", "residual_sgd_m",
               "rate_old_pct", "rate_new_pct"]
-    spath = OUT / "sensitivity.csv"
-    with spath.open("w", newline="", encoding="utf-8") as f:
-        wcsv = csv.DictWriter(f, fieldnames=cols_s)
-        wcsv.writeheader()
-        wcsv.writerows(rows_s)
-    print("wrote:", spath.as_posix(), f"({spath.stat().st_size} bytes, {len(rows_s)} rows)")
+    tables = [
+        ("yearly_bridge.csv", cols, rows_out),
+        ("book_split.csv", list(book_rows[0]), book_rows),
+        ("sensitivity.csv", cols_s, rows_s),
+    ]
+    with tempfile.TemporaryDirectory(prefix=".analysis-", dir=OUT.parent) as directory:
+        staged = Path(directory)
+        for name, fields, rows in tables:
+            with (staged / name).open("w", newline="", encoding="utf-8") as f:
+                wcsv = csv.DictWriter(f, fieldnames=fields)
+                wcsv.writeheader()
+                wcsv.writerows(rows)
+        publish_paths([(staged / name, OUT / name) for name, _, _ in tables])
+    for name, _, rows in tables:
+        path = OUT / name
+        print("wrote:", path.as_posix(), f"({path.stat().st_size} bytes, {len(rows)} rows)")
 
     print()
     print("RESULT: ALL CHECKS PASS")

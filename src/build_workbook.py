@@ -32,6 +32,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parent.parent
 PARQUET = (ROOT / "data/processed/quarterly.parquet").as_posix()
+PARQUET_SQL = PARQUET.replace("'", "''")
 BRIDGE_CSV = ROOT / "outputs/yearly_bridge.csv"
 OUT = ROOT / "outputs/quick_check.xlsx"
 
@@ -100,7 +101,7 @@ def build(out):
         sys.exit("data/processed/quarterly.parquet missing — run src/build_dataset.py first")
     con = duckdb.connect()
     rows = q(con, f"""SELECT quarter, billings_sgd_m, rollover_sgd_m, write_offs_sgd_m, charge_off_rate_pct
-                      FROM read_parquet('{PARQUET}') ORDER BY quarter DESC""")
+                      FROM read_parquet('{PARQUET_SQL}') ORDER BY quarter DESC""")
     quarters = [(label(r[0]), r[0].year, (r[0].month - 1) // 3 + 1,
                  float(r[1]), float(r[2]), float(r[3]), float(r[4])) for r in rows]
     n = len(quarters)

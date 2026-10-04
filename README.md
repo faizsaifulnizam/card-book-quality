@@ -9,7 +9,7 @@
 
 ## [Read the analysis → live report](https://faizsaifulnizam.github.io/card-book-quality/)
 
-[![CI](https://github.com/faizsaifulnizam/card-book-quality/actions/workflows/ci.yml/badge.svg)](https://github.com/faizsaifulnizam/card-book-quality/actions/workflows/ci.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-C0552B.svg)](LICENSE) [Data: MAS via data.gov.sg](https://data.gov.sg/datasets/d_5c8e5801c2a64e2e6b16608296ef3e02/view)
+[![CI](https://github.com/faizsaifulnizam/card-book-quality/actions/workflows/ci.yml/badge.svg)](https://github.com/faizsaifulnizam/card-book-quality/actions/workflows/ci.yml) [![license: MIT](https://img.shields.io/badge/license-MIT-C0552B.svg)](LICENSE) [![Data: MAS via data.gov.sg](https://img.shields.io/badge/data-MAS%20via%20data.gov.sg-22607B.svg)](https://data.gov.sg/datasets/d_5c8e5801c2a64e2e6b16608296ef3e02/view)
 
 **Question:** Did Singapore's card write-offs rise because outstanding revolving balances grew, or because the loss ratio increased?
 
@@ -19,10 +19,10 @@
 
 **Fixed historical analysis:** raw-data snapshot pulled **2026-10-03**, quarterly coverage **2014 Q4–2026 Q2**, headline **2025 vs 2024**. Written findings are maintained manually, not an automatically refreshing report. A new pull requires a new review of text, tests, charts and workbook before publication.
 
-<a href="reports/figures/f1_timeline.png"><picture>
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="reports/figures/f1_timeline-dark.png">
   <img src="reports/figures/f1_timeline.png" width="100%" alt="Separate panels for quarterly billings, write-offs, complete trailing-four-quarter write-offs and the published charge-off ratio, 2015–2026">
-</picture></a>
+</picture>
 
 [View full-size timeline](reports/figures/f1_timeline.png) · [dark version](reports/figures/f1_timeline-dark.png)
 
@@ -35,7 +35,7 @@ This is a **Hermes-assisted portfolio project**: Hermes implemented the pipeline
 All money below is **S$ million** unless labelled per card. Dollar write-offs use quarterly sums, so 2025 is **519.7**, compared with **519.8** in the separately rounded annual source.
 
 - **Headline:** 2024 → 2025 write-offs **423.2 → 519.7**; **+96.5 = balance +63.9 + ratio +32.6** ([yearly bridge](outputs/yearly_bridge.csv)).
-- **The path:** 2024 vs 2023 **+152.8 = +50.0 + +102.8**, with a **+1.42 percentage-point** proxy-ratio step. Across 2022–2025, **+317.8 = +150.4 + +167.4**; the ratio term is the larger cumulative contribution. The smaller **+0.39 pt** proxy-ratio increase in 2025 is a different comparison, and its annual average lags the quarterly path.
+- **The path:** 2024 vs 2023 **+152.8 = +50.0 + +102.8**, with a **+1.42 percentage-point** proxy-ratio step. Comparing the 2022 and 2025 endpoints, **+317.8 = +150.4 + +167.4**; the ratio term is larger. This is an endpoint split, not the sum of yearly contributions. The smaller **+0.39 pt** proxy-ratio increase in 2025 is a different comparison, and its annual average lags the quarterly path.
 - **Balance denominator matters:** 2025 annual-average rollover rose **+1,134.825**. With total reported cards the balance split is approximately **cards −32 / per-card +1,167**; with principal cards alone it is **cards +30 / per-card +1,105**. Supplementary counts affect the sign; neither measure is unique borrowers. [Sensitivity](docs/sensitivity.md) also compares annual-average and year-end bases.
 - **Other windows:** trailing four quarters **+79.3 = +58.4 + +20.9**; H1 2026 vs H1 2025 **+23.7 = +27.2 − 3.5**. These are same-season comparisons, not proof that seasonality is removed.
 - **Published-rate sensitivity:** balance contribution changes **−0.3507**, ratio contribution **+0.8124**, with a separate **−0.46175 basis-and-rounding residual**. The old “within ±0.5” claim was wrong ([calculation](docs/sensitivity.md)).
@@ -103,7 +103,7 @@ Rollover is used because it is the revolving balance against which losses are me
 
 ### Validation — what each check can prove
 
-- **Raw arithmetic:** `python src/audit.py` profiles 47 contiguous quarters and six populated series, prints annual flow/stock cross-checks and proxy ratios. In this snapshot, flows reconcile within 0.1 S$M; annual stocks match Q4; annual proxy ratios differ from published rates by at most 0.049 pt.
+- **Raw arithmetic:** `python src/audit.py` profiles 47 contiguous quarters and six populated series, prints annual flow/stock cross-checks and proxy ratios. In this snapshot, flows reconcile within 0.1 S$M; annual rollover and principal-card stocks match Q4; annual proxy ratios differ from published rates by at most 0.049 pt.
 - **Calculation:** bridge closure follows algebra. Independent raw-CSV calculations in `tests/test_narrative.py` check the headline, published-basis differences and card-denominator sensitivities against maintained text.
 - **Presentation:** narrative tests check required caveats and full-size chart links. They do not visually inspect charts or evaluate Excel formulas.
 - **Workbook:** formula/input regressions are separate from recalculation. The installed LibreOffice engine was run headlessly in an isolated profile and calculated the default **543.4 S$M** trailing sum and **−0.1 pt** rate change, a recent-quarter change, early-history blank, invalid-selection message and all ten annual comparisons. Microsoft Excel itself and non-recalculating preview caches were not verified. Default quarterly write-offs are **138.1 S$M** for 2026 Q2.
@@ -115,7 +115,10 @@ Rollover is used because it is the revolving balance against which losses are me
 ```bash
 git clone https://github.com/faizsaifulnizam/card-book-quality && cd card-book-quality
 uv venv .venv --python 3.12 --seed   # seed pip; or: python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
+source .venv/bin/activate            # Linux/macOS Bash
+# Windows Git Bash: source .venv/Scripts/activate
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# Windows cmd.exe: .venv\Scripts\activate.bat
 python -m pip install --require-hashes -r requirements.lock
 
 python src/run_all.py        # uses vendored raw data; no data-fetch network required

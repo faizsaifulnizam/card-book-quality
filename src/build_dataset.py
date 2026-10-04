@@ -20,6 +20,7 @@ STAGING = ROOT / "sql/01_staging.sql"
 CHECKS = ROOT / "sql/03_checks.sql"
 OUT_DIR = ROOT / "data/processed"
 RAW = (ROOT / "data/raw/credit-charge-cards-quarterly.csv").as_posix()
+RAW_SQL = RAW.replace("'", "''")
 
 # Exclusion rules — must mirror the WHERE clause in sql/01. A cell is excluded if ANY rule matches.
 SERIES_LIST = ("'Principal Cardholders', 'Supplementary Cardholders', 'Total Card Billings', "
@@ -31,7 +32,7 @@ RULES = [
 ]
 ANY_RULE = "(" + " OR ".join(expr for _, expr in RULES) + ")"
 
-UNPIVOT = (f"UNPIVOT (SELECT * FROM read_csv_auto('{RAW}')) "
+UNPIVOT = (f"UNPIVOT (SELECT * FROM read_csv_auto('{RAW_SQL}')) "
            "ON COLUMNS(* EXCLUDE (DataSeries)) INTO NAME q_label VALUE value")
 
 
@@ -51,7 +52,7 @@ def main():
     con.execute("CREATE OR REPLACE VIEW raw_long AS " + UNPIVOT)
     # The staging SQL references the raw file by a repo-relative path; substitute the
     # absolute path so no step depends on the process working directory.
-    staging_sql = STAGING.read_text(encoding="utf-8").replace("data/raw/credit-charge-cards-quarterly.csv", RAW)
+    staging_sql = STAGING.read_text(encoding="utf-8").replace("data/raw/credit-charge-cards-quarterly.csv", RAW_SQL)
     con.execute(staging_sql)
 
     quarters = q(con, "SELECT count(*) FROM quarterly")[0][0]
@@ -88,10 +89,11 @@ def main():
 
     pq = OUT_DIR / "quarterly.parquet"
     tmp = OUT_DIR / "quarterly.parquet.tmp"
+    tmp_sql = tmp.as_posix().replace("'", "''")
     con.sql(f"""COPY (SELECT * REPLACE (
         CAST(principal_cardholders AS BIGINT) AS principal_cardholders,
         CAST(supplementary_cardholders AS BIGINT) AS supplementary_cardholders)
-        FROM quarterly) TO '{tmp.as_posix()}' (FORMAT PARQUET)""")
+        FROM quarterly) TO '{tmp_sql}' (FORMAT PARQUET)""")
     os.replace(tmp, pq)
     print(f"wrote: {pq.as_posix()}  ({pq.stat().st_size} bytes)")
 

@@ -27,9 +27,9 @@ No duplicate quarters, no structural oddities — an official aggregate series; 
 | kind | series | annual figure is… | rule |
 |---|---|---|---|
 | **flow** | Total Card Billings · Bad Debts Written Off | the **sum** of the year's four quarters | match Σ quarters within 0.1 S$M (cells are published to 0.1) |
-| **stock** | Rollover Balance · cardholders | the **year-end value (= Q4)** | equal Q4 exactly — and **never** the average the bridge uses |
+| **stock** | Rollover Balance · principal cardholders | the **year-end value (= Q4)** | equal Q4 exactly — and **never** the average the bridge uses |
 
-The bridge's balance denominator is the **average of the four quarter-end balances** (2025: 8,920.3 S$M); the annual file's rollover is the year-end stock (2025: 9,400.2 = Q4). Different quantities, both correct — comparing them as if interchangeable would read as a pipeline error. Both reconciliations print in `src/audit.py` and are **asserted** before any output is written in `src/analysis.py`.
+The bridge's balance denominator is the **average of the four quarter-end balances** (2025: 8,920.3 S$M); the annual file's rollover is the year-end stock (2025: 9,400.2 = Q4). Different quantities, both correct — comparing them as if interchangeable would read as a pipeline error. Flow sums and rollover/principal-card year-end cross-checks print in `src/audit.py` and are **asserted** before output in `src/analysis.py`; supplementary annual Q4 values are not part of that assertion.
 
 ## Cross-check: quarterly sums vs the published annual file — flows (yearly sums)
 
