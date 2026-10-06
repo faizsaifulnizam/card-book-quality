@@ -10,9 +10,15 @@ Average reported total card count fell 0.4%, while aggregate rollover balance pe
 
 ## Recommended next action
 
-1. **Monitor balances alongside repayment and delinquency**, not write-offs alone. Obtain utilisation, revolving-account counts and borrower/vintage information before interpreting rising balances as stress or healthy expansion.
-2. **Investigate the Q3 2025 principal-count break** with publisher or issuer definitions. Retain the unadjusted data and compare annual-average with year-end measures meanwhile; do not invent an adjustment.
-3. **Seek issuer-level evidence before any lending-policy change.** This aggregate arithmetic identifies where the dollar change sits, not its cause or the institution responsible.
+Use the split to choose what to investigate, then test the explanations below with issuer data. **These are hypotheses, not findings:** this aggregate arithmetic identifies where the dollar change sits, not its cause or the institution responsible.
+
+| Hypothesis to test | Evidence needed | Response if supported |
+|---|---|---|
+| Exposure grew among healthy borrowers | Issuer-level utilisation and revolving-account counts, linked to repayment patterns and stable delinquency within borrower segments | Continue monitoring exposure and repayment together; balance growth alone does not justify tightening |
+| Borrower cohorts worsened | Delinquency transitions and repayment deterioration by origination vintage and borrower segment, reconciled with issuer write-offs and timing | Escalate to an issuer-level credit-risk review when repayment and delinquency evidence corroborates deterioration; assess affected cohorts before considering policy |
+| Reporting or count changes altered the proxies | Publisher and issuer definitions, reporting coverage and revisions; reconciliation of principal/supplementary counts around the Q3 2025 break | Resolve the measurement issue before interpreting per-card movements; retain unadjusted data and annual-average/year-end comparisons, with no invented adjustment |
+
+**Trade-off:** blanket tightening can restrict healthy borrowers' access, while ignoring deterioration can leave losses unchecked. Neither response follows from this aggregate file. No lending-policy prescription is justified until issuer data separates these explanations; the observed rate range below is context, not an escalation threshold.
 
 ## What would change this reading
 
