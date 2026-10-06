@@ -26,6 +26,12 @@
 
 [View full-size timeline](reports/figures/f1_timeline.png) · [dark version](reports/figures/f1_timeline-dark.png)
 
+## Decision implications
+
+For a credit-risk analyst, this split sets the investigation order, not a bank policy. Test whether higher balances reflect exposure growth among healthy borrowers, worsening borrower cohorts, or reporting/count changes. That needs issuer-level utilisation, revolving-account counts, repayment and delinquency evidence, plus definition reconciliation around the count break. These are hypotheses, not findings from the aggregate file.
+
+Escalate to an issuer-level credit-risk review when corroborated repayment and delinquency evidence supports deterioration, not because balances or write-offs rose alone. Blanket tightening can restrict healthy borrowers' access, but ignoring deterioration can leave losses unchecked. No lending-policy prescription is justified until issuer data separates those explanations. The [decision memo](docs/decision_memo.md) maps each hypothesis to evidence and a conditional response.
+
 ## What I did
 
 This is a **Hermes-assisted portfolio project**: Hermes implemented the pipeline and presentation; Faiz approved the question, comparison years, decomposition method and wording at the review gate, in line with the shared portfolio plan. It is not presented as unaided coding. The work demonstrates SQL staging and checks, flow-versus-stock metric definitions, reproducible arithmetic decomposition, source reconciliation and communication of limits. External LLM reviews were treated as hypotheses to verify, not authority: see the [review disposition](docs/review-remediation.md).
