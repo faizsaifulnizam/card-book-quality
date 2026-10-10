@@ -171,7 +171,8 @@ def build(out):
         "plain SUMIFS with a bounds guard: no OFFSET, and still correct if you re-sort the sheet.",
         "The Annual bridge sheet computes the split live with SUMIFS / AVERAGEIFS — it mirrors outputs/yearly_bridge.csv.",
         "Source: MAS credit & charge cards via data.gov.sg — Singapore Open Data Licence. See docs/data_audit.md.",
-        "Charge-off rate is as published: bad debts written off ÷ average rollover balance, annualised.",
+        "Published rate: source percentage; publisher averaging/write-off treatment unverified.",
+        "Proxy = annual write-offs / mean quarter-end rollover; not a verified publisher denominator.",
         "Formula-only, no macros. XLOOKUP needs Excel 2021+/365; older readers can swap it for INDEX/MATCH.",
         "Numbers reproduce outputs/yearly_bridge.csv and the README headline for the same pull.",
     ]

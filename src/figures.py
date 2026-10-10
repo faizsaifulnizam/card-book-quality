@@ -192,7 +192,7 @@ def fig1_timeline(con, canvas_in=9.0):
     print(f"   [PASS] trailing-4 sum is null for the first {first_full} plotted quarters (no partial windows plotted)")
 
     title = "Spending, losses and the charge-off rate — Singapore's card book, 2015 Q1 – 2026 Q2"
-    foottext = ("All issuers in Singapore, not one bank · charge-off rate as published: bad debts written off ÷ average rollover balance, annualised\n"
+    foottext = ("All issuers in Singapore, not one bank · published rate: source percentage; publisher averaging/write-off treatment unverified\n"
                 f"{SRC}")
     assert_fits(title, 12.5, "F1 title", canvas_in)
     assert_fits(foottext, 7.5, "F1 footnote", canvas_in)

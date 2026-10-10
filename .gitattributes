@@ -2,5 +2,7 @@
 # sha256 receipts and CI re-runs compare like-for-like (no autocrlf rewriting either side).
 data/raw/*.csv -text
 data/raw/*.json -text
+# Archived publisher response bodies retain their recorded byte hashes.
+docs/source-evidence/M*.json -text
 outputs/*.csv -text
 outputs/*.xlsx -text

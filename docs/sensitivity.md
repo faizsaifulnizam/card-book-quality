@@ -17,9 +17,9 @@
 
 ## How to read it
 
-- **Dollars still rising; the mix is moving.** Every variant shows a positive change, and volume outweighs rate — except 2020, where the book *shrank* and the rate alone drove the rise (volume −41.2, rate +73.0). But the freshest reads narrow: on the trailing window volume is ~three-quarters; on the H1 read the **rate term is negative (−3.5)** — the charge-off rate is no longer contributing.
-- **The rate is a shelf, not a drift.** The annual-average line 5.44% → 5.83% is a *lagging* average of a step that already happened: the published quarterly rate has sat at 5.9–6.0% for six quarters. Read it as "the level reset in 2024", not "the rate is still climbing".
-- **The two quarters not yet in any annual figure** (2026 H1) show the same dollar direction — the trailing window uses them and the split barely moves (58.4 / 20.9).
+- **Dollars still rising; the mix is moving.** Every variant shows a positive change, and volume outweighs rate — except 2020, where the book *shrank* and the rate alone drove the rise (volume −41.2, rate +73.0). In H1 2026 versus H1 2025, the recomputed-ratio component offsets 3.5 S$M of the increase; the balance component adds 27.2 S$M.
+- **Annual and quarterly paths differ.** The annual proxy increased most in 2024. Published quarterly rates fluctuated between 5.0% and 6.5% in 2024, then stayed at 5.9–6.0% from 2025 Q1 through 2026 Q2. The annual proxy 5.44% → 5.83% is a lagging average, not proof of a continuing quarterly rise.
+- **The trailing comparison is still balance-led:** +79.3 = +58.4 +20.9 S$M over 2025 Q3–2026 Q2 versus the prior four quarters. Its contribution sizes differ from the annual comparison; 2026 H1 is not a full annual observation.
 - **Basis check:** reading rates from the published annual table (5.4% → 5.8%) changes the balance term by **−0.350665 S$M** and the ratio term by **+0.812415 S$M**. The old “within ±0.5 S$M” claim was false for the ratio term. The separate **basis-and-rounding residual is −0.461750 S$M**; see the full-precision calculation below.
 - **Weighting choice, made visible:** with midpoint weights the two terms close exactly and the joint term reports as 0; with base-year weights it surfaces at +4.4 S$M (≈5% of the change). Both variants ship in the table so the choice of midpoints is auditable, not an assumption to take on faith.
 - **Not a forecast.** Variants re-describe the same fixed history; none projects. A refresh or source revision requires reviewing outputs and maintained text together.
