@@ -124,18 +124,31 @@ def _shape(text):
     return header, rows[1:]
 
 
+def validate_quarter_header(header):
+    """Reject physical header ambiguity before inference or dictionary construction.
+
+    Snapshot replay checks structure, not the live-download freshness floor.
+    """
+    problems = []
+    if not header or header[0] != "DataSeries":
+        return ["first header column is not 'DataSeries'"]
+    bad = [c for c in header[1:] if not QCOL.fullmatch(c)]
+    if bad:
+        problems.append(f"non-quarter header columns: {bad[:5]}")
+    if len(header[1:]) != len(set(header[1:])):
+        problems.append("duplicate quarter columns")
+    return problems
+
+
 def validate_quarterly(data):
     """Structural validation + summary for the quarterly wide CSV (raw bytes in;
     the hash is over those bytes, so it matches `sha256sum` on the file)."""
     text = data.decode("utf-8", errors="replace")
     header, body = _shape(text)
-    problems = []
+    problems = validate_quarter_header(header)
     if not header or header[0] != "DataSeries":
-        return None, ["first header column is not 'DataSeries'"]
+        return None, problems
     qcols = [c for c in header[1:] if QCOL.match(c)]
-    if len(qcols) != len(header) - 1:
-        bad = [c for c in header[1:] if not QCOL.match(c)]
-        problems.append(f"non-quarter header columns: {bad[:5]}")
     if len(qcols) < Q_CONTIG_MIN:
         problems.append(f"only {len(qcols)} quarter columns (< {Q_CONTIG_MIN})")
     names = [r[0] for r in body]
@@ -152,8 +165,7 @@ def validate_quarterly(data):
         m = QCOL.match(c)
         idx.append(int(m.group(1)) * 4 + int(m.group(2)))
     idx_sorted = sorted(idx)
-    if idx_sorted and len(set(idx_sorted)) != len(idx_sorted):
-        problems.append("duplicate quarter columns")
+
     if idx_sorted and any(b - a != 1 for a, b in zip(idx_sorted, idx_sorted[1:])):
         problems.append("quarter columns are not contiguous")
     latest = max(idx) if idx else 0

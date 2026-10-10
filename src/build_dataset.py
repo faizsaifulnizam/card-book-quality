@@ -16,6 +16,8 @@ from pathlib import Path
 import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from src.download import validate_quarter_header
 STAGING = ROOT / "sql/01_staging.sql"
 CHECKS = ROOT / "sql/03_checks.sql"
 OUT_DIR = ROOT / "data/processed"
@@ -46,6 +48,9 @@ def main():
 
     with open(RAW, newline="", encoding="utf-8") as f:
         rows = list(csv.reader(f))
+    problems = validate_quarter_header(rows[0] if rows else [])
+    if problems:
+        raise SystemExit(f"quarterly header validation failed: {problems}; existing parquet left untouched")
     raw_cells = sum(len(row) - 1 for row in rows[1:])
     missing = sum(not value.strip() for row in rows[1:] for value in row[1:])
     present = raw_cells - missing

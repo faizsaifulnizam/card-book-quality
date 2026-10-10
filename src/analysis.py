@@ -32,7 +32,7 @@ import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from src.download import publish_paths  # noqa: E402
+from src.download import publish_paths, validate_quarter_header  # noqa: E402
 PARQUET = (ROOT / "data/processed/quarterly.parquet").as_posix()
 PARQUET_SQL = PARQUET.replace("'", "''")
 RAWQ = ROOT / "data/raw/credit-charge-cards-quarterly.csv"
@@ -57,6 +57,9 @@ def load_raw():
     annual series -> {year: raw string} (annual may carry 'na')."""
     with RAWQ.open(newline="", encoding="utf-8") as f:
         rows = list(csv.reader(f))
+    problems = validate_quarter_header(rows[0] if rows else [])
+    if problems:
+        raise SystemExit(f"quarterly header validation failed: {problems}; existing CSVs left untouched")
     qq = {r[0]: dict(zip(rows[0][1:], [float(v) for v in r[1:]])) for r in rows[1:]}
     with RAWA.open(newline="", encoding="utf-8") as f:
         rows = list(csv.reader(f))

@@ -80,6 +80,19 @@ Both flow gaps stay within **0.1 S$M in every year** (quarterly cells are publis
 
 ## Source trail and retrieval limits
 
+**Archival copies, not a fresh retrieval:** saved official SingStat responses generated **10/10/2026** for **M701051** (quarterly, updated 31/08/2026) and **M701071** (annual, updated 29/05/2026) are preserved in [source-evidence](source-evidence/README.md). Exact HTTP request URL and retrieval timestamp were not included in those response bodies; no new acquisition date is inferred.
+
+| Saved publisher field | What it establishes |
+|---|---|
+| Counts and rollover: “As at end of period.” | Principal/supplementary series and rollover are end-period stocks; not unique-customer counts |
+| Billings: “Refers to reporting entities' total billings of cardholders in and outside Singapore.” | Reporting scope includes cardholders inside and outside Singapore |
+| `adjustmentType`: “Non-seasonally Adjusted” | Both source tables are not seasonally adjusted |
+| Blank rate/write-off footnotes | These responses do **not** establish exact rate averaging/annualisation, gross/net write-offs or recoveries |
+
+**Still unknown:** detailed count population, publisher rollover averaging and annualisation mechanics, write-off/recovery treatment, revision policy and the Q3 2025 count-break cause. The annual proxy remains our explicit mean-quarter-end denominator, not a verified reconstruction of the publisher's method. Supported stock definitions and empirical flow/stock reconciliation are distinct evidence.
+
+### Earlier retrieval attempts (historical)
+
 The retrieved official dataset page identifies MAS as source and links SingStat table **M701051**.[1] Its retrieved copy showed coverage only through 2026 Q1 and an earlier update date than the committed metadata; it was not used to replace or re-date our fixed snapshot. Generic column legends are not governing notes for each economic series.
 
 - [SingStat source table M701051](https://tablebuilder.singstat.gov.sg/table/TS/M701051): linked by the retrieved publisher page; table-body extraction failed.
